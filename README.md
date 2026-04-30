@@ -31,3 +31,4 @@ conda activate tb_v2_env
 ## Install Initial Dependencies
 ```
 pip install numpy pandas matplotlib seaborn scikit-learn tensorflow opencv-python pillow tqdm streamlit ipykernel
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
