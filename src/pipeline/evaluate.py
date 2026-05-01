@@ -95,6 +95,9 @@ def evaluate_model(model_path):
     print(f"✅ Saved artifacts for {model_name}")
 
 # ---------------- MAIN ----------------
+# if __name__ == "__main__":
+#     evaluate_model()
+
 if __name__ == "__main__":
     model_paths = [
         "models/tensorflow/resnet_model.h5",

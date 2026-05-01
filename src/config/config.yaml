@@ -4,6 +4,14 @@ model:
   name: vgg
   save_path: models/tensorflow/vgg_model.h5
 
+# model:
+#   name: resnet
+#   save_path: models/tensorflow/resnet_model.h5
+
+# model:
+#   name: efficientnet
+#   save_path: models/tensorflow/efficientnet_model.h5
+
 training:
   epochs: 10
   batch_size: 32
