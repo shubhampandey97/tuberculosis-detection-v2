@@ -3,7 +3,14 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from PIL import Image
+
+import sys
 import os
+
+# Add project root to Python path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
 from src.components.gradcam import make_gradcam_heatmap
 

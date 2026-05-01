@@ -1,77 +1,64 @@
-import tensorflow as tf
-import numpy as np
 import os
-import json
+import numpy as np
+import tensorflow as tf
+from sklearn.utils.class_weight import compute_class_weight
 
-from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
-
+from src.components.data_loader import load_datasets, apply_augmentation
+from src.components.model_builder import build_model
 from src.utils.config_loader import load_config
 
+# Load config
 config = load_config()
 
 DATA_PATH = config["data_path"]
-MODEL_PATH = config["model"]["save_path"]
-METRICS_PATH = config["artifacts"]["metrics_path"]
-
 IMG_SIZE = tuple(config["training"]["img_size"])
-BATCH_SIZE = config["training"]["batch_size"]
+EPOCHS = config["training"]["epochs"]
+MODEL_PATH = config["model"]["save_path"]
 
-def load_test_data():
-    test_ds = tf.keras.utils.image_dataset_from_directory(
-        DATA_PATH,
-        validation_split=0.2,
-        subset="validation",
-        seed=42,
-        image_size=IMG_SIZE,
-        batch_size=BATCH_SIZE
+def train_model(model_name):
+
+    train_ds, val_ds = load_datasets(DATA_PATH)
+    train_ds = apply_augmentation(train_ds)
+
+    # 🔥 Compute class weights dynamically
+    labels = np.concatenate([y.numpy() for x, y in train_ds], axis=0)
+
+    class_weights_array = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(labels),
+        y=labels
     )
-    return test_ds
 
-def evaluate_model():
+    class_weights = dict(enumerate(class_weights_array))
+    print("Class Weights:", class_weights)
 
-    print(f"\nEvaluating: {MODEL_PATH}")
+    model = build_model(model_name)
 
-    model = tf.keras.models.load_model(MODEL_PATH)
-    test_ds = load_test_data()
+    history = model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=EPOCHS,
+        class_weight=class_weights
+    )
 
-    y_true, y_pred, y_prob = [], [], []
+    # Save model (no hardcoding)
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    model.save(MODEL_PATH)
 
-    for images, labels in test_ds:
-        probs = model.predict(images, verbose=0)
-        preds = (probs > 0.5).astype(int)
+    return history
 
-        y_true.extend(labels.numpy())
-        y_pred.extend(preds.flatten())
-        y_prob.extend(probs.flatten())
 
-    # Metrics
-    report = classification_report(y_true, y_pred, output_dict=True)
-    roc_auc = roc_auc_score(y_true, y_prob)
-    cm = confusion_matrix(y_true, y_pred)
-
-    print("\nClassification Report:")
-    print(classification_report(y_true, y_pred))
-
-    print("\nConfusion Matrix:")
-    print(cm)
-
-    print("\nROC-AUC Score:")
-    print(roc_auc)
-
-    # Save metrics (no hardcoding)
-    os.makedirs(os.path.dirname(METRICS_PATH), exist_ok=True)
-
-    results = {
-        "roc_auc": roc_auc,
-        "confusion_matrix": cm.tolist(),
-        "classification_report": report
-    }
-
-    with open(METRICS_PATH, "w") as f:
-        json.dump(results, f, indent=4)
-
-    print(f"\nMetrics saved to: {METRICS_PATH}")
-
+# if __name__ == "__main__":
+#     train_model(config["model"]["name"])
 
 if __name__ == "__main__":
-    evaluate_model()
+
+    models = ["vgg", "resnet", "efficientnet"]
+
+    for m in models:
+        print(f"\n🚀 Training {m.upper()}...\n")
+
+        config["model"]["name"] = m
+        config["model"]["save_path"] = f"models/tensorflow/{m}_model.h5"
+
+        train_model(m)
