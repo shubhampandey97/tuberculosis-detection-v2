@@ -1,0 +1,14 @@
+data_path: data/Dataset of Tuberculosis Chest X-rays Images
+
+model:
+  name: vgg
+  save_path: models/tensorflow/vgg_model.h5
+
+training:
+  epochs: 10
+  batch_size: 32
+  img_size: [224, 224]
+
+artifacts:
+  metrics_path: artifacts/metrics/results.json
+  plots_dir: artifacts/plots/

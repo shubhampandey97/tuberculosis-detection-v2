@@ -1,70 +1,77 @@
-import os
-
-# Enable XLA (optional)
-os.environ["TF_XLA_FLAGS"] = "--tf_xla_auto_jit=2"
-
-import numpy as np
-from sklearn.utils.class_weight import compute_class_weight
-
 import tensorflow as tf
+import numpy as np
+import os
+import json
 
-from src.components.data_loader import load_datasets, apply_augmentation
-from src.components.model_builder import build_model
+from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
 
-DATA_PATH = "data/Dataset of Tuberculosis Chest X-rays Images"
+from src.utils.config_loader import load_config
 
-def train_model(model_name):
+config = load_config()
 
-    train_ds, val_ds = load_datasets(DATA_PATH)
-    train_ds = apply_augmentation(train_ds)
+DATA_PATH = config["data_path"]
+MODEL_PATH = config["model"]["save_path"]
+METRICS_PATH = config["artifacts"]["metrics_path"]
 
-    # Extract labels from dataset
-    labels = np.concatenate([y.numpy() for x, y in train_ds], axis=0)
+IMG_SIZE = tuple(config["training"]["img_size"])
+BATCH_SIZE = config["training"]["batch_size"]
 
-    # Compute class weights
-    class_weights_array = compute_class_weight(
-        class_weight='balanced',
-        classes=np.unique(labels),
-        y=labels
+def load_test_data():
+    test_ds = tf.keras.utils.image_dataset_from_directory(
+        DATA_PATH,
+        validation_split=0.2,
+        subset="validation",
+        seed=42,
+        image_size=IMG_SIZE,
+        batch_size=BATCH_SIZE
     )
+    return test_ds
 
-    class_weights = dict(enumerate(class_weights_array))
+def evaluate_model():
 
-    print("Class Weights:", class_weights)
+    print(f"\nEvaluating: {MODEL_PATH}")
 
-    model = build_model(model_name)
+    model = tf.keras.models.load_model(MODEL_PATH)
+    test_ds = load_test_data()
 
-    # history = model.fit(
-    #     train_ds,
-    #     validation_data=val_ds,
-    #     epochs=10
-    # )
+    y_true, y_pred, y_prob = [], [], []
 
-    # Handle class imbalance
-    # class_weights = {
-    #     0: 514/87,   # Normal class (minority)
-    #     1: 1.0       # TB class (majority)
-    # }
+    for images, labels in test_ds:
+        probs = model.predict(images, verbose=0)
+        preds = (probs > 0.5).astype(int)
 
-    class_weights = {
-    0: 3.0,
-    1: 1.0
+        y_true.extend(labels.numpy())
+        y_pred.extend(preds.flatten())
+        y_prob.extend(probs.flatten())
+
+    # Metrics
+    report = classification_report(y_true, y_pred, output_dict=True)
+    roc_auc = roc_auc_score(y_true, y_prob)
+    cm = confusion_matrix(y_true, y_pred)
+
+    print("\nClassification Report:")
+    print(classification_report(y_true, y_pred))
+
+    print("\nConfusion Matrix:")
+    print(cm)
+
+    print("\nROC-AUC Score:")
+    print(roc_auc)
+
+    # Save metrics (no hardcoding)
+    os.makedirs(os.path.dirname(METRICS_PATH), exist_ok=True)
+
+    results = {
+        "roc_auc": roc_auc,
+        "confusion_matrix": cm.tolist(),
+        "classification_report": report
     }
 
-    history = model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=10,
-        class_weight=class_weights
-    )
+    with open(METRICS_PATH, "w") as f:
+        json.dump(results, f, indent=4)
 
-    os.makedirs("models/tensorflow", exist_ok=True)
-    model.save(f"models/tensorflow/{model_name}_model.h5")
-
-    return history
+    print(f"\nMetrics saved to: {METRICS_PATH}")
 
 
 if __name__ == "__main__":
-    train_model("efficientnet")
-    # train_model("vgg")
-    # train_model("resnet")
+    evaluate_model()
