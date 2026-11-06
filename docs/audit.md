@@ -231,10 +231,47 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
 - **Near-duplicates:** checked with thumbnail correlation ≥ 0.99 in the data audit: N candidate pairs, M confirmed by visual check (removed / kept because …).
 - **Limitation:** no patient IDs, so images from the same patient could still land in different splits.
 
-### Goals 2–8: 
 ### Data audit: done (2026-11-07)
 - **New:** [src/pipeline/data_audit.py](../src/pipeline/data_audit.py) (`python -m src.pipeline.data_audit`) and [notebooks/01_data_audit.ipynb](../notebooks/01_data_audit.ipynb) (same checks, with plots). Outputs go to `reports/data_audit/`.
 - **Confirmed:** 3,008 images, 0 corrupt, all RGB; 26 exact-duplicate groups (52 files), none cross-class; 124 non-square images, all TB, all with 96-dpi metadata.
 - **New finding:** metadata-only ROC-AUC 0.918 (file size alone 0.861) → strong source confounding. See §5.3 item 7.
 - **Method note:** a 64-bit perceptual hash (dHash) was tried for near-duplicates and rejected. It flagged 22,138 pairs, mostly different patients, because chest X-rays share the same layout. It was replaced with correlation of 32×32 thumbnails (≥ 0.99).
 - **Goal 4 additions:** (a) metrics on test images with borders masked, (b) the non-square TB subgroup vs the rest, (c) external validation on a dataset where both classes come from the same hospital (e.g. Shenzhen or Montgomery).
+
+### Goal 2 — PIPELINE FIX: done, smoke-tested (2026-11-07). Full training not run yet (goal 3).
+- **Data** ([data_loader.py](../src/components/data_loader.py)):
+  - A tf.data pipeline from `data/splits.csv` (fixes §5.3 item 1: there is now a held-out test split).
+  - Images are decoded as RGB, resized to 224×224, and kept in **raw 0–255**. The `/255` step is removed (§5.1).
+  - Class weights are computed from the training rows of `splits.csv`: {0: 2.931, 1: 0.603}.
+- **Decision — resize:** a plain 224×224 resize is kept on purpose. Non-square TB images are stretched, and goal 4 measures whether that acts as a shortcut.
+- **Augmentation** (training only, seeded): `RandomRotation(0.028)` (about ±10°) and `RandomZoom(0.1)`. `RandomFlip("horizontal")` is removed, because a flipped chest X-ray puts the heart on the wrong side. The old rotation of 0.1 meant ±36°.
+- **Models** ([model_builder.py](../src/components/model_builder.py)):
+  - Preprocessing is now inside each model, so a saved model takes raw 0–255 RGB everywhere (§5.1).
+  - VGG16 and ResNet50 use a registered `CaffePreprocess` layer, identical to Keras `preprocess_input` (max difference 0.0). EfficientNetB0 has no extra layer.
+  - The base is built with `input_tensor=`, so the graph stays flat. `LAST_CONV_LAYER` records the Grad-CAM layer for each model (goal 5).
+  - The base is frozen; only the head is trainable (513, 2,049 and 1,281 parameters).
+  - Metrics: accuracy and AUC.
+- **Decision — format:** models are saved as `models/tensorflow/{name}_model.keras` (native Keras 3). A `Lambda(preprocess_input)` layer would not reload safely. The old `.h5` files are untouched; the app and the Grad-CAM script still use the old VGG `.h5` until goals 5 and 6.
+- **Training** ([train_pipeline.py](../src/pipeline/train_pipeline.py)):
+  - One save path per model (fixes §5.2).
+  - Epoch cap 20. `EarlyStopping(val_auc, patience 4, restore_best_weights)` and `ModelCheckpoint(best val_auc)`.
+  - History is saved to `artifacts/history/{name}.json`.
+  - Batch size, image size, epochs, learning rate, patience and augmentation settings are read from [config.yaml](../src/config/config.yaml) (fixes §5.4 for training).
+- **Seeds** ([seed.py](../src/utils/seed.py)): `PYTHONHASHSEED`, `keras.utils.set_random_seed(42)` and `enable_op_determinism()` (fixes §5.5). **Determinism kept:** in the smoke test it cost 0.93–1.08× the run time without it (limit was 2×), and the results were identical both ways.
+- **Evaluation** ([evaluate.py](../src/pipeline/evaluate.py)):
+  - Metrics and plots on the **test split only**, at threshold 0.5.
+  - Per-image predictions for val and test go to `artifacts/predictions/{model}_{split}.csv` (`path, label, prob, width, height`).
+  - The best model is chosen by **val AUC only** (`artifacts/metrics/summary.json`); test results are reported for all three.
+- **Legacy:** old metrics and plots moved to [artifacts/legacy/](../artifacts/legacy/README.md), marked invalid.
+- **Smoke test** ([smoke_test.py](../src/pipeline/smoke_test.py)): 1 epoch on 200 training and 100 val images (stratified), writing only to `models/smoke/`. **Passed for all 3 models:**
+
+| model | preprocess vs Keras | predictions (32 test images) | reload max diff | 1-epoch fit | s/image (inference) |
+|---|---|---|---|---|---|
+| VGG16 | 0.0 | 0.002–0.882 | 0.0 | 42.3 s | 0.133 |
+| ResNet50 | 0.0 | 0.285–0.916 | 0.0 | 28.8 s | 0.061 |
+| EfficientNetB0 | n/a | 0.453–0.714 | 0.0 | 20.8 s | 0.033 |
+
+  The smoke val AUCs (0.46–0.63) come from 1 epoch on 200 images. They only show the pipeline runs; they are **not** results. `evaluate.py` was also dry-run on the smoke models, with outputs written to a temporary folder.
+- **Expected full training time (CPU):** about 5.6, 2.6 and 1.4 min per epoch (VGG, ResNet, EfficientNet). That's about 1.2–2.5 h in total if early stopping ends at 8–15 epochs, and about 3.2 h at the 20-epoch cap. Evaluation adds a few minutes.
+
+### Goals 3–8: not started
