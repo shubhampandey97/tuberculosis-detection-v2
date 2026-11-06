@@ -134,6 +134,16 @@ The labels are consistent (§2), so label order is not the cause. The cause is p
 4. **Possible shortcut from image source** *(corrected)*. All 514 Normal images are 256×256. Of the TB images (after removing duplicates), 2,349 are 256×256 and **124 are non-square** (widths 234–256, heights 185–240; e.g. `TB.100.jpg` is 256×221). These 124 also carry 96-dpi JPEG metadata, while the others report density 1×1. Resizing to 224×224 stretches them vertically, and a model could learn "stretched means TB". The different filename schemes also suggest the two classes come from different sources.
 5. The old split is not stratified (14.5% Normal in validation vs 17.1% overall).
 6. The PyTorch path validates on the **full training set** ([torch_dataset.py:22-30](../src/components/torch_dataset.py#L22-L30)).
+7. **Strong source confounding (found by the data audit, `notebooks/01_data_audit.ipynb`).** Simple models that never see the anatomy can predict the label from metadata alone (5-fold CV ROC-AUC):
+
+   | Metadata only | Logistic regression | Decision tree (depth 3) |
+   |---|---|---|
+   | Width / height / aspect | 0.525 | 0.525 |
+   | File size (KB) | 0.784 | **0.861** |
+   | Brightness / contrast | 0.744 | 0.803 |
+   | All metadata | 0.911 | **0.918** |
+
+   Visual inspection agrees. All Normal images share one look: the same small "L" marker in the top-right corner, similar exposure and vertical streak artefacts. TB images vary: "R" markers in different positions, handwritten text and dates at the bottom, and varied exposure and noise. The two classes most likely come from different sources, so a CNN could learn markers, annotations or compression instead of TB. Some of the brightness/contrast difference may be real pathology, so the effects can't be fully separated. **Consequence:** internal test scores are an upper bound and may partly measure the source, not the disease. Goal 4 tests this with border masking, subgroup analysis and external validation; goal 5 checks Grad-CAM for attention on markers.
 
 ### §5.4 Hard-coded values and paths (all relative to the current directory)
 - `IMG_SIZE` and `BATCH_SIZE` are hard-coded in [data_loader.py:3-4](../src/components/data_loader.py#L3-L4), [model_builder.py:6](../src/components/model_builder.py#L6) and [gradcam.py:6](../src/components/gradcam.py#L6).
@@ -218,6 +228,13 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
   - Split fractions and the TB share are within 1 percentage point of target.
   - A separate re-hash of `splits.csv` gave 2,982 unique hashes.
 - **Not done yet:** near-duplicate detection (perceptual hashing). Exact copies only.
+- **Near-duplicates:** checked with thumbnail correlation ≥ 0.99 in the data audit: N candidate pairs, M confirmed by visual check (removed / kept because …).
 - **Limitation:** no patient IDs, so images from the same patient could still land in different splits.
 
-### Goals 2–8: not started
+### Goals 2–8: 
+### Data audit: done (2026-11-07)
+- **New:** [src/pipeline/data_audit.py](../src/pipeline/data_audit.py) (`python -m src.pipeline.data_audit`) and [notebooks/01_data_audit.ipynb](../notebooks/01_data_audit.ipynb) (same checks, with plots). Outputs go to `reports/data_audit/`.
+- **Confirmed:** 3,008 images, 0 corrupt, all RGB; 26 exact-duplicate groups (52 files), none cross-class; 124 non-square images, all TB, all with 96-dpi metadata.
+- **New finding:** metadata-only ROC-AUC 0.918 (file size alone 0.861) → strong source confounding. See §5.3 item 7.
+- **Method note:** a 64-bit perceptual hash (dHash) was tried for near-duplicates and rejected. It flagged 22,138 pairs, mostly different patients, because chest X-rays share the same layout. It was replaced with correlation of 32×32 thumbnails (≥ 0.99).
+- **Goal 4 additions:** (a) metrics on test images with borders masked, (b) the non-square TB subgroup vs the rest, (c) external validation on a dataset where both classes come from the same hospital (e.g. Shenzhen or Montgomery).

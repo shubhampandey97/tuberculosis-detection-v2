@@ -14,7 +14,7 @@ What it checks (each answers "can I trust this data?"):
     2. Integrity        corrupt / unreadable files, colour modes (RGB, L, RGBA)
     3. Metadata         width, height, aspect ratio, DPI per class
     4. Exact duplicates byte-identical files (MD5 hash), within and across classes
-    5. Near-duplicates  visually identical files (perceptual dHash + Hamming distance)
+    5. Near-duplicates  visually identical files (correlation of 32x32 grayscale thumbnails)
     6. Pixel stats      brightness / contrast per class on small grayscale thumbnails
     7. Shortcut test    can a simple model predict the label from metadata ALONE?
                         If yes, the classes differ in how they were collected, and a CNN
@@ -43,9 +43,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
-THUMB = 64          # thumbnail size for pixel statistics
-HASH_SIZE = 8       # dHash grid -> 64-bit hash
-NEAR_DUP_BITS = 4   # Hamming distance <= this counts as a near-duplicate (0 = identical look)
+THUMB = 64            # thumbnail size for pixel statistics
+SIM_SIZE = 32         # thumbnail size for near-duplicate search
+NEAR_DUP_CORR = 0.99  # Pearson correlation >= this counts as a near-duplicate candidate
+# Note: a 64-bit perceptual hash (dHash) was tried first and is NOT usable for chest X-rays:
+# different patients' X-rays share the same coarse layout, so it flagged 22,000+ false pairs.
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -57,12 +59,11 @@ def md5(path):
     return h.hexdigest()
 
 
-def dhash(gray_img):
-    """Difference hash: compares neighbouring pixels of a 9x8 thumbnail -> 64 bools.
-    Robust to resizing, recompression and small brightness changes."""
-    small = np.asarray(gray_img.resize((HASH_SIZE + 1, HASH_SIZE), Image.LANCZOS), dtype=np.int16)
-    bits = (small[:, 1:] > small[:, :-1]).flatten()
-    return np.packbits(bits)  # 8 bytes
+def sim_vector(gray_img):
+    """32x32 thumbnail, z-normalised, so the dot product of two vectors / n = Pearson correlation.
+    Robust to resizing, recompression and brightness/contrast changes."""
+    v = np.asarray(gray_img.resize((SIM_SIZE, SIM_SIZE), Image.BILINEAR), dtype=np.float32).ravel()
+    return ((v - v.mean()) / (v.std() + 1e-6)).astype(np.float32)
 
 
 def inspect_file(path, label_name):
@@ -76,7 +77,7 @@ def inspect_file(path, label_name):
             row.update(width=im.width, height=im.height, mode=im.mode, format=im.format,
                        dpi=str(im.info.get("dpi", "")))
             gray = im.convert("L")
-            row["dhash"] = dhash(gray)
+            row["sim_vec"] = sim_vector(gray)
             thumb = np.asarray(gray.resize((THUMB, THUMB)), dtype=np.float32)
             row.update(mean_px=thumb.mean(), std_px=thumb.std(),
                        dark_frac=(thumb < 10).mean(), bright_frac=(thumb > 245).mean())
@@ -118,20 +119,23 @@ def exact_duplicates(df):
 
 
 def near_duplicates(df):
+    """All pairs whose 32x32 thumbnails correlate >= NEAR_DUP_CORR (exact MD5 copies excluded)."""
     ok = df[df["readable"]].reset_index(drop=True)
-    hashes = np.stack(ok["dhash"].values)                     # (n, 8) uint8
-    bits = np.unpackbits(hashes, axis=1).astype(bool)          # (n, 64)
+    vecs = np.stack(ok["sim_vec"].values)                      # (n, 1024)
+    n_px = vecs.shape[1]
     pairs = []
-    for i in range(len(ok) - 1):                               # row-by-row keeps memory small
-        dist = (bits[i + 1:] != bits[i]).sum(axis=1)
-        for j in np.nonzero(dist <= NEAR_DUP_BITS)[0]:
-            a, b = ok.iloc[i], ok.iloc[i + 1 + j]
-            if a["md5"] == b["md5"]:
-                continue                                       # already an exact duplicate
-            pairs.append({"path_a": a["path"], "class_a": a["class"],
-                          "path_b": b["path"], "class_b": b["class"],
-                          "hamming": int(dist[j])})
-    return pd.DataFrame(pairs, columns=["path_a", "class_a", "path_b", "class_b", "hamming"])
+    for start in range(0, len(ok), 512):                       # block-wise keeps memory small
+        block = vecs[start:start + 512] @ vecs.T / n_px        # correlations (block, n)
+        for bi, row in enumerate(block):
+            i = start + bi
+            for j in np.nonzero(row[i + 1:] >= NEAR_DUP_CORR)[0] + i + 1:
+                a, b = ok.iloc[i], ok.iloc[j]
+                if a["md5"] == b["md5"]:
+                    continue                                   # already an exact duplicate
+                pairs.append({"path_a": a["path"], "class_a": a["class"],
+                              "path_b": b["path"], "class_b": b["class"],
+                              "corr": round(float(row[j]), 4)})
+    return pd.DataFrame(pairs, columns=["path_a", "class_a", "path_b", "class_b", "corr"])
 
 
 def shortcut_test(df):
@@ -209,7 +213,7 @@ def write_report(out_dir, data_dir, df, classes, skipped, dups, cross, near, sho
               "other in test.", ""]
 
     lines += ["## 5. Near-duplicates (perceptual hash)", "",
-              f"Pairs with Hamming distance <= {NEAR_DUP_BITS} (not byte-identical): **{len(near)}**. "
+              f"Pairs with thumbnail correlation >= {NEAR_DUP_CORR} (not byte-identical): **{len(near)}**. "
               f"Cross-class pairs: **{int((near['class_a'] != near['class_b']).sum()) if len(near) else 0}**.",
               "", "These are candidates only: open a few pairs and look before removing anything.", ""]
 
@@ -250,7 +254,7 @@ def main():
     near = near_duplicates(df)
     shortcut = shortcut_test(df)
 
-    df.drop(columns="dhash").to_csv(os.path.join(args.out, "inventory.csv"), index=False)
+    df.drop(columns="sim_vec").to_csv(os.path.join(args.out, "inventory.csv"), index=False)
     dups.to_csv(os.path.join(args.out, "exact_duplicates.csv"), index=False)
     near.to_csv(os.path.join(args.out, "near_duplicates.csv"), index=False)
     report = write_report(args.out, data_dir, df, classes, skipped, dups, cross, near, shortcut)
