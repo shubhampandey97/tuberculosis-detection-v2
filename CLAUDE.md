@@ -13,7 +13,7 @@ docs/audit.md is the full code audit (sections §1–§6). Refer to it by sectio
 - data/Dataset of Tuberculosis Chest X-rays Images/: 514 Normal ("Normal Chest X-rays/"), 2,494 TB ("TB Chest X-rays/").
 - Labels: 0 = Normal, 1 = TB (alphabetical folder order). Sigmoid output = P(TB). This is correct; don't change it.
 - 26 byte-identical duplicate pairs (52 files), within-class.
-- Possible shortcut: 124 TB images are 96x96 (upscaled), all Normal are 256x256.
+- Possible shortcut: 124 TB images are non-square (not 256×256), stretched by the 224×224 resize; all Normal are 256x256.
 - No patient IDs, so patient-level splitting is impossible (state this as a limitation).
 
 # Root causes of the bad results (audit §5.1–5.3), all to be fixed
@@ -39,7 +39,7 @@ docs/audit.md is the full code audit (sections §1–§6). Refer to it by sectio
 3. RETRAIN all 3 models and evaluate on test. Save new metrics; compare with artifacts/legacy/.
 4. EVALUATION: sensitivity, specificity, PPV, NPV with 95% bootstrap CIs; ROC + calibration curve + Brier score;
    choose the threshold on VAL for sensitivity >= 95%, then report on TEST.
-   Shortcut check: metrics on the 96x96 TB subgroup vs the rest; a baseline that predicts from image size only.
+   Shortcut check: metrics on the non-square TB subgroup vs the rest; a baseline that predicts from image size only.
 5. GRAD-CAM: fix the NaN guard, one layer name per model; gallery of all test false negatives/positives;
    docs/failure_analysis.md with observations.
 6. APP + REQUIREMENTS: .convert("RGB"); use the tuned threshold; "not for clinical use" disclaimer;
