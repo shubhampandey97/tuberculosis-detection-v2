@@ -48,3 +48,8 @@ logs/
 # =========================
 .DS_Store
 Thumbs.db
+
+# =========================
+# Regenerable Grad-CAM heatmaps (python -m src.pipeline.gradcam_analysis)
+# =========================
+artifacts/gradcam/*.npz

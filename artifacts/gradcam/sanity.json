@@ -1,0 +1,40 @@
+{
+  "resnet": {
+    "model": "resnet",
+    "layer": "conv5_block3_out",
+    "n": 32,
+    "max_abs_prob_diff_vs_saved": 3.200767516586822e-07,
+    "max_abs_sigmoid_logit_vs_output": 5.960464477539063e-08,
+    "any_nan": false,
+    "empty_tb_maps": 0,
+    "heatmap_range_ok": true,
+    "region_fractions_ok": true,
+    "random_head": {
+      "n_pairs": 27,
+      "mean_pearson": 0.4119054724609349,
+      "median_pearson": 0.4877373172014551,
+      "min": -0.13784979235782904,
+      "max": 0.7686710616646488,
+      "empty_random_maps": 5
+    }
+  },
+  "vgg": {
+    "model": "vgg",
+    "layer": "block5_conv3",
+    "n": 32,
+    "max_abs_prob_diff_vs_saved": 5.341110234646784e-09,
+    "max_abs_sigmoid_logit_vs_output": 3.725290298461914e-09,
+    "any_nan": false,
+    "empty_tb_maps": 0,
+    "heatmap_range_ok": true,
+    "region_fractions_ok": true,
+    "random_head": {
+      "n_pairs": 32,
+      "mean_pearson": -0.0665086635308346,
+      "median_pearson": -0.10175246068075097,
+      "min": -0.23842639020881823,
+      "max": 0.43541207968558854,
+      "empty_random_maps": 0
+    }
+  }
+}

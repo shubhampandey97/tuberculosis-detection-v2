@@ -419,4 +419,39 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
    - Part of each drop may be distribution shift: the models never saw grey borders in training. So the border drops are an upper bound on reliance on the border. The centre-hidden result doesn't have that problem in the same direction: shift should *hurt* AUC, yet it stays high.
    - **Conclusion:** the internal test scores (AUC 0.991–0.998) **overstate** how well the models detect TB from lung findings. External validation on a single-source dataset (Shenzhen/Montgomery) is needed before any claim of clinical relevance.
 
-### Goals 5–8: not started
+### Goal 5 — GRAD-CAM: done (2026-11-07). Full write-up: [failure_analysis.md](failure_analysis.md)
+- **Fixed in [gradcam.py](../src/components/gradcam.py)** (§5.2 rows):
+  - NaN guard: maps with max ≤ 1e-8 are returned as zeros and flagged empty.
+  - Keras 3 gradient model built without the extra list around `model.inputs`.
+  - No `plt.show()` and no cv2: `overlay()` returns an RGB array.
+  - One documented layer per model (`model_builder.LAST_CONV_LAYER`): VGG16 `block5_conv3`, ResNet50 `conv5_block3_out`, EfficientNetB0 `top_conv`. The `block5_conv2`/`block5_conv3` mismatch is gone.
+  - Grad-CAM now targets the pre-sigmoid logit and is batched.
+  - `make_gradcam_heatmap()` keeps its old signature; checked to still work with the app's old VGG `.h5`.
+  - [gradcam_pipeline.py](../src/pipeline/gradcam_pipeline.py) is now a command-line tool (`--model --image --out`) with no hard-coded paths.
+- **Analysis:** [gradcam_analysis.py](../src/pipeline/gradcam_analysis.py). The full run takes 9 min 17 s on CPU; `--sanity-only` and `--galleries-only` are available. Outputs go to `artifacts/gradcam/`.
+- **Sanity check (32 images):**
+  - Probabilities match the saved ones (≤ 3.2e-7).
+  - No NaN; 0 empty TB maps.
+  - Randomised head: median r = −0.10 for VGG (passes) and **0.49 for ResNet (only partly passes**: ResNet maps partly reflect where features are active, so they are weaker evidence).
+- **Attention: share of TB-evidence energy in the outer 12% border** (median; uniform reference 0.424):
+  - **ResNet50, correct TB: 0.331** (mostly central, but the bottom strip gets 1.4× its area share).
+  - **VGG16: 0.463 overall**, with the bottom strip at 2.1–2.9× its area share.
+  - **Missed TB is more peripheral than correct TB**, robust across layers: ResNet conv5 0.388 vs 0.331 (p = 0.047); ResNet conv4 0.526 vs 0.308 (p = 0.010); VGG 0.624 vs 0.429 (p = 8.7e-9).
+  - The ResNet Normal vs TB difference flips between conv5 and conv4, so it isn't robust.
+  - Empty maps:
+    - TB-evidence: ResNet conv5 1, conv4 13, VGG 0.
+    - Predicted-class: 0 for all.
+- **Galleries** (qualitative): the 7 shared misses + `others (23)`, plus 10 random correct Normal and 10 random correct TB.
+  - Hot spots on **handwritten text and labels** in several correct TB images.
+  - No consistent focus on the Normal "L" marker.
+  - The Normal evidence for the misses lies mostly outside the lung fields.
+- **The 7 shared misses:**
+  - All 256×256.
+  - 6 of 7 have Normal-like **large file sizes** (79th–94th percentile of TB) and lower contrast.
+  - None has bottom handwriting.
+  - TB.1892 shows visible opacities but is still missed.
+  - The false positive `others (23)` is a Normal image with a TB-like small file.
+  - **Hypothesis:** the models partly learned the image source (consistent with §5.3 item 7 and the goal 4 masking result).
+- **Proposed next step (not done):** retrain on border-masked or lung-cropped images, then repeat the masking test; external validation; radiologist review of the misses.
+
+### Goals 6–8: not started
