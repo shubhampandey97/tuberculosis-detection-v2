@@ -148,7 +148,10 @@ def run_masking(config, test, models, out_dir, rerun):
     import time
     cache = os.path.join(out_dir, "predictions_masked")
     os.makedirs(cache, exist_ok=True)
-    path_of = lambda v, m: os.path.join(cache, f"{m}_{v}_test.csv")
+
+    def path_of(v, m):
+        return os.path.join(cache, f"{m}_{v}_test.csv")
+
     todo = [m for m in models if rerun or not all(os.path.exists(path_of(v, m)) for v in MASKS)]
 
     if todo:
@@ -191,7 +194,8 @@ def save_mask_examples(test, config, out_dir):
             shown = img if v == "none" else mask_fn(img_size, *MASKS[v])[0](img)
             ax = axes[r, c]
             ax.imshow(np.clip(shown.numpy(), 0, 255).astype("uint8"))
-            ax.set_xticks([]); ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
             if r == 0:
                 ax.set_title(MASK_LABELS[v].replace(" (lungs hidden)", "\n(lungs hidden)"), fontsize=8)
             if c == 0:
@@ -306,7 +310,9 @@ def main():
     ax1.legend(fontsize=8)
     ax2.set(xlabel="Predicted P(TB)", ylabel="Images", title="Prediction histogram (test)", yscale="log")
     ax2.legend(fontsize=8)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT_DIR, "calibration.png"), dpi=120); plt.close(fig)
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUT_DIR, "calibration.png"), dpi=120)
+    plt.close(fig)
     cal = pd.DataFrame(cal_rows)
     cal.to_csv(os.path.join(OUT_DIR, "calibration_bins.csv"), index=False)
     md.append("### Calibration bins (TEST): n / mean predicted / observed TB fraction\n" + md_table(

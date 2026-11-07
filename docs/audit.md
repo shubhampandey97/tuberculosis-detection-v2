@@ -481,4 +481,38 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
 - **.gitignore:** the merged `Thumbs.db`/`*.npz` line was repaired and the UTF-16 line removed. The `.npz` heatmaps were untracked and removed from history (amended into the goal 5 commit).
 - **Still open:** recalibrating the scores; the threshold margin decision from goal 4; Docker, API and model card (goal 8); tests and CI (goal 7).
 
-### Goals 7–8: not started
+### Goal 7 — ENGINEERING: done (2026-11-07, branch `upgrade-v4`)
+- **Package:** `__init__.py` in `src/`, `src/components/`, `src/pipeline/`, `src/utils/` and `tests/` (fixes the §5.6 namespace-package note).
+- **`pyproject.toml`** holds tool configuration only:
+  - pytest runs from the repo root (`pythonpath = ["."]`), with markers `data` and `models`.
+  - ruff uses the default rule set (E4/E7/E9/F), lint only with no formatting rules, line length 120. It excludes `legacy/` and `notebooks/`.
+- **`requirements-dev.txt`:** the runtime requirements plus `pytest==8.3.5` and `ruff==0.9.10`. Installed into `tb_v2_env` after a dry run; only 5 new packages were added and none changed.
+- **Ruff:** fixed 25 findings by hand, with no blanket auto-fix:
+  - 13 one-line `a; b` statements split (E702).
+  - 3 `x = lambda` assignments turned into functions (E731).
+  - An unused variable (F841) and an f-string without placeholders (F541).
+  - 2 unused imports (F401), checked one by one: `itertools.combinations` in `data_audit.py` and `pandas` in `evaluate.py`. The imports that register `CaffePreprocess` already carry `# noqa: F401` and were kept.
+  - Logic is unchanged. Afterwards, all 3 saved models reload and reproduce their saved test predictions (within 1e-4).
+- **Code change for testing:** `build_model(..., weights="imagenet")` gains a `weights` parameter (default unchanged), so tests build the real architectures untrained at 32×32 without downloading ImageNet weights.
+- **Tests:** 8 files, 49 tests, all on synthetic data except where noted.
+  - Label mapping.
+  - Preprocessing parity: app path vs training path, exactly equal for JPEG and PNG. These are regression tests for both past bugs, together with a 0–255 range check.
+  - `CaffePreprocess` vs Keras `preprocess_input`.
+  - L, LA, RGBA and P inputs give `(1, 224, 224, 3)`.
+  - Predictions within [0, 1], and save/reload gives identical output.
+  - Grad-CAM NaN guard and logit consistency.
+  - `make_splits` on a synthetic folder: duplicates dropped, no hash in two splits, stratification within ±1 image, determinism, cross-class duplicate error.
+  - Metric, bootstrap and threshold functions on known inputs.
+  - Committed `splits.csv`, `duplicates.csv` and `thresholds.json` integrity.
+  - **Auto-skip without images or models:** the file-hash leakage check (1 test) and the app-path parity vs `artifacts/predictions/` for all 3 models (3 tests). `TB_TESTS_SIMULATE_CI=1` runs the suite as CI sees it.
+- **Local timings** (`tb_v2_env`, CPU):
+  - Full suite: **49 passed in 57.8 s**. The first cold run took 82 s, because hashing 2,982 images took 23.8 s when the files weren't cached.
+  - CI-simulated: **45 passed, 4 skipped in 37.9 s**.
+  - Local runs need `PYTHONNOUSERSITE=1`. A user-site `platformdirs` 4.11.0 (`AppData\Roaming\Python\Python310`) shadows the env's 4.12.4 and breaks pytest's plugin loading. The env is complete without the user site.
+- **CI** (`.github/workflows/ci.yml`): ubuntu-latest, Python 3.10, pip cache. Steps: install `requirements-dev.txt`, `ruff check .`, `pytest`. Runs on push to `main`, on pull requests, and manually.
+  - Linux install check: every pin has a Linux x86-64 / CPython 3.10 wheel on PyPI. The Linux TensorFlow 2.16.1 wheel requires `tensorflow-intel` only when `platform_system == "Windows"`.
+  - Not yet run on GitHub.
+- **`.gitattributes`:** `* text=auto eol=lf`, plus binary rules. `git add --renormalize .` changed nothing, because every tracked text file was already stored as LF (`core.autocrlf=true`); only the Windows working copies were CRLF.
+- **README:** CI badge, a "Tests and lint" step, and `tests/` and CI in the repo map.
+
+### Goals 9, 8, 10: not started

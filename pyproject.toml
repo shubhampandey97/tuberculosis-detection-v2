@@ -1,0 +1,24 @@
+# Tool configuration only (the project is run as modules from the repo root, not installed).
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+markers = [
+    "data: needs the dataset images in data/ (skipped automatically when missing)",
+    "models: needs trained models in models/tensorflow/ (skipped automatically when missing)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    # Untrained test models are saved before the optimizer is built; harmless on reload.
+    "ignore:Skipping variable loading for optimizer:UserWarning",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+extend-exclude = ["legacy", "notebooks"]
+
+[tool.ruff.lint]
+# Ruff's default rule set (pyflakes + pycodestyle errors). Lint only; no formatting rules.
+select = ["E4", "E7", "E9", "F"]

@@ -46,13 +46,16 @@ def main():
 
     out = args.out or f"gradcam_{args.model}_{os.path.splitext(os.path.basename(args.image))[0]}.png"
     fig, axes = plt.subplots(1, 2, figsize=(8, 4.3))
-    axes[0].imshow(img.astype(np.uint8)); axes[0].set_title(os.path.basename(args.image), fontsize=9)
+    axes[0].imshow(img.astype(np.uint8))
+    axes[0].set_title(os.path.basename(args.image), fontsize=9)
     axes[1].imshow(overlay(img, heatmap[0]))
     axes[1].set_title(f"{args.model} ({layer}): P(TB)={prob[0]:.3f} -> {'TB' if is_tb else 'Normal'} "
                       f"@ {threshold:.3g}" + (" [empty map]" if empty[0] else ""), fontsize=9)
     for ax in axes:
         ax.axis("off")
-    fig.tight_layout(); fig.savefig(out, dpi=120); plt.close(fig)
+    fig.tight_layout()
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
     print(f"Saved {out}")
 
 
