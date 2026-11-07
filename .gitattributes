@@ -1,0 +1,11 @@
+# Normalise line endings: LF in the repository and in working copies, on every OS.
+* text=auto eol=lf
+
+# Binary files: never convert or diff as text.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.npz    binary
+*.keras  binary
+*.h5     binary
+*.pdf    binary
