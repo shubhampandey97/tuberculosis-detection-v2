@@ -1,0 +1,109 @@
+{
+  "H1": {
+    "resnet/shenzhen": {
+      "external_auc": 0.6699167397020158,
+      "ci_high": 0.7094377647531406,
+      "internal_auc": 0.9983197395596318,
+      "supported": true
+    },
+    "resnet/montgomery": {
+      "external_auc": 0.65625,
+      "ci_high": 0.7484967672413793,
+      "internal_auc": 0.9983197395596318,
+      "supported": true
+    },
+    "vgg/shenzhen": {
+      "external_auc": 0.4701376716330704,
+      "ci_high": 0.5140618152936021,
+      "internal_auc": 0.9917037140756817,
+      "supported": true
+    },
+    "vgg/montgomery": {
+      "external_auc": 0.5818965517241379,
+      "ci_high": 0.6834159482758619,
+      "internal_auc": 0.9917037140756817,
+      "supported": true
+    },
+    "efficientnet/shenzhen": {
+      "external_auc": 0.5217371457785569,
+      "ci_high": 0.5654691151767455,
+      "internal_auc": 0.9964294465642174,
+      "supported": true
+    },
+    "efficientnet/montgomery": {
+      "external_auc": 0.5379310344827586,
+      "ci_high": 0.6398760775862069,
+      "internal_auc": 0.9964294465642174,
+      "supported": true
+    }
+  },
+  "H4": {
+    "resnet/shenzhen": {
+      "diff": 0.0013876716330702976,
+      "ci": [
+        -0.01062915388548063,
+        0.013220767601519204
+      ],
+      "supported": true
+    },
+    "resnet/montgomery": {
+      "diff": -0.004310344827586299,
+      "ci": [
+        -0.028879310344827713,
+        0.018970905172413854
+      ],
+      "supported": false
+    },
+    "vgg/shenzhen": {
+      "diff": 0.007513511539585238,
+      "ci": [
+        -0.00020107544551561384,
+        0.01563002118025129
+      ],
+      "supported": true
+    },
+    "vgg/montgomery": {
+      "diff": -0.005603448275862011,
+      "ci": [
+        -0.02025862068965512,
+        0.009488146551724152
+      ],
+      "supported": false
+    },
+    "efficientnet/shenzhen": {
+      "diff": 0.009366783523225175,
+      "ci": [
+        -0.0025566936897459674,
+        0.02094311459246278
+      ],
+      "supported": true
+    },
+    "efficientnet/montgomery": {
+      "diff": 0.0118534482758621,
+      "ci": [
+        -0.00969827586206895,
+        0.03168103448275861
+      ],
+      "supported": true
+    }
+  },
+  "H2": {
+    "montgomery_resnet_specificity": 0.0,
+    "supported": true
+  },
+  "H3": {
+    "testable": false,
+    "note": "no confirmed overlaps (whole-image and crop search)"
+  },
+  "H5": {
+    "resnet_specificity": {
+      "shenzhen": 0.2085889570552147,
+      "montgomery": 0.0
+    },
+    "resnet_auc": {
+      "shenzhen": 0.6699167397020158,
+      "montgomery": 0.65625
+    },
+    "supported": true
+  }
+}

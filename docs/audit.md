@@ -515,4 +515,170 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
 - **`.gitattributes`:** `* text=auto eol=lf`, plus binary rules. `git add --renormalize .` changed nothing, because every tracked text file was already stored as LF (`core.autocrlf=true`); only the Windows working copies were CRLF.
 - **README:** CI badge, a "Tests and lint" step, and `tests/` and CI in the repo map.
 
-### Goals 9, 8, 10: not started
+### Goal 9 — EXTERNAL VALIDATION: in progress (branch `upgrade-v4`)
+
+#### Pre-registered expectations (written 2026-11-07 14:01, before any external predictions existed)
+At the time of writing, `artifacts/external/` held only the 10-image preprocessing check (examples, histograms, `sample_*.csv/json`). No external images had been passed through any model. The models, the val-tuned thresholds (ResNet50 0.6142, VGG16 0.2357, EfficientNetB0 0.3257) and the preprocessing were fixed in advance and won't change after seeing external results.
+
+- **H1:** external ROC-AUC will be lower than the internal test AUC of 0.998 (ResNet50; VGG16 0.991, EfficientNetB0 0.996), on both Shenzhen and Montgomery. The size of the drop is not predicted.
+- **H2:** Montgomery **specificity** at the val-tuned thresholds will be **low**. Its images carry "R" markers, white "PA ERECT" labels and dark bottom bands, which resemble the training TB source more than the training Normal source (§5.3 item 7, failure_analysis.md).
+- **H3:** if some Shenzhen images overlap with the training data, results on those overlapping images will be **inflated** compared with the non-overlapping ones.
+- **H4:** if the models rely on compression artefacts, the **JPEG variant** (quality 75, 4:2:0, like the training files) will score a **higher AUC than the lossless PNG** variant.
+
+How they'll be judged (fixed now):
+- H1 is supported for a site and model if the external AUC's 95% CI upper bound is below the internal point estimate.
+- H2 is supported if Montgomery specificity at the tuned threshold is below 0.80 for the primary model (ResNet50).
+- H3 is supported if AUC (or sensitivity/specificity, where AUC is undefined) on the overlapping images is higher than on the rest. It can only be judged if confirmed overlaps exist.
+- H4 is supported if JPEG AUC > PNG AUC for a site and model. The size and consistency of the gap across models and sites will be reported, along with the paired bootstrap 95% CI of the difference.
+
+Each hypothesis will be reported below as supported or not supported, with the numbers.
+
+**Addendum (written 2026-11-07 14:21, still before any external predictions existed).** It was prompted by the overlap check: 785 of the 800 external images (98%), Normal and TB alike, have a *training TB* image as their closest thumbnail match.
+- **H5:** the models will flag most external Normal images as TB, so **specificity at the val-tuned thresholds will be low on both sites**, while **AUC may hold up better than specificity**.
+- **Judged by:** specificity < 0.80 on both sites for the primary model (ResNet50), and AUC − specificity > 0 on both sites. As with H2, ResNet50 is judged first and the other two models are reported alongside.
+
+**Addendum 2 (written 2026-11-07 14:43, after the evaluation and before any external Grad-CAM had been computed).**
+- **H6:** on Montgomery, the share of Grad-CAM energy **inside the true lung fields** (left + right `ManualMask`) will **not exceed** the lung-area share of the image, for ResNet50 and for VGG16.
+- **Method, fixed now:**
+  - Masks follow exactly the image geometry: original size → 256×256 (PIL, nearest) → 224×224 (TensorFlow, nearest). That's the same stretch as the image path (Lanczos to 256, bilinear to 224), with nearest-neighbour interpolation so masks stay binary.
+  - A unit test checks mask/image alignment, and a 4-image overlay figure is saved for a visual check.
+  - Maps: TB-evidence map (primary) and predicted-class map (secondary), at the same layers as goal 5 (ResNet50 `conv5_block3_out`, VGG16 `block5_conv3`).
+  - Per image: inside-lung energy = Σ(heatmap · mask) / Σ heatmap, after upsampling to 224×224. Lung-area share = mean(mask).
+- **Judged by:** H6 is supported for a model if the median of (inside-lung energy − lung-area share) over the Montgomery images is ≤ 0 on the primary map. Empty maps are excluded and counted. A Wilcoxon signed-rank p-value and per-class / correct-vs-wrong breakdowns are reported alongside. H6 is supported overall only if it holds for both models.
+
+#### Data audit of the external sets
+Same `data_audit.py` functions, unchanged; labels come from the `_0`/`_1` file suffix. Outputs: `artifacts/external/data_audit/`.
+- **Duplicates:** no exact or near-duplicates (thumbnail correlation ≥ 0.99) within either site.
+- **Metadata-only shortcut test** (5-fold CV ROC-AUC; logistic regression / depth-3 tree):
+
+| features | training (Kaggle) | Shenzhen | Montgomery |
+|---|---|---|---|
+| width + height + aspect | 0.525 / 0.525 | 0.711 / 0.742 | 0.578 / 0.578 |
+| file size | 0.784 / 0.861 | 0.532 / 0.655 | 0.558 / 0.533 |
+| brightness / contrast | 0.744 / 0.803 | 0.705 / 0.721 | 0.602 / 0.585 |
+| **all metadata** | **0.911 / 0.918** | **0.855** / 0.791 | **0.637** / 0.564 |
+
+- **Shenzhen is flagged** (all-metadata AUC 0.855 ≥ 0.80): its labels are partly guessable from acquisition metadata, mostly image size and brightness/contrast.
+  - That would limit Shenzhen as a test for **models trained on Shenzhen**. Our models are frozen and never saw it, so they can only exploit cues that also exist in the training data.
+  - Shenzhen's brightness difference points the **opposite way** to the training data's: Shenzhen Normal is brighter than TB (median 161 vs 151), while in training TB is brighter than Normal (136 vs 132).
+  - The cue that predicts Shenzhen labels is therefore not one the models learned. Image size is removed by the resize, except for the stretch.
+- **Montgomery** (0.637, not flagged) is the **cleanest external test**, but it is small (n = 138: 80 Normal, 58 TB), so its CIs will be wide.
+- **Intensity shift vs training** (median of 64×64 thumbnails): Shenzhen is brighter (151–161 vs 132–136). Montgomery has far more dark and saturated area (18% of pixels < 10 and 5% > 245, vs ≤ 0.3% and 0% in training). No intensity normalisation was applied; this shift is part of what is being tested.
+
+#### Inventory, preprocessing and overlap
+- **Script:** [src/pipeline/external_validation.py](../src/pipeline/external_validation.py), run in stages (`--stage sample | audit | prepare | readings | overlap | cropsearch | evaluate | gradcam`). Outputs go to `artifacts/external/`; converted images to `data/external/prepared/` (not committed).
+- **Inventory:**
+  - Shenzhen: 662 images (326 Normal / 336 TB), 635 palette + 27 RGB, all truly gray, 8-bit, 948–3001 px, aspect w/h 0.76–1.30.
+  - Montgomery: 138 images (80 / 58), 8-bit grayscale, 4020×4892 portrait (97) or 4892×4020 landscape (41). The NLM ReadMe states "12 bits" of gray levels, but the distributed PNGs are 8-bit: mode `L`, maximum 255. So no bit-depth rescaling was possible or needed.
+  - Both counts match the expected numbers. 11 macOS/Windows junk files were ignored.
+- **Clinical readings:** parsed strictly. 7 Shenzhen readings were corrected by hand where the meaning was unambiguous (`femal` ×3; `16month` ×2 → 1.33 y; `64days` → 0.18 y; `Male , 38yrs,`), recorded in `readings_corrected.csv`. 2 stay unknown: `male 42` (no unit) and Montgomery sex "O".
+- **Preprocessing:**
+  1. Decode to 8-bit gray. A 16-bit path that scales by the real bit depth exists but was not needed.
+  2. Lanczos downscale to 256×256, stretching non-square images like the training set.
+  3. Lossless PNG (primary) and JPEG at the training files' quality (75, 4:2:0; read from their quantisation tables).
+  4. The unchanged `decode_and_resize` to 224×224.
+  - No intensity normalisation (decided in advance): the intensity shift is part of the test.
+  - Parity: the evaluation path reproduces the saved internal test predictions for all 3 models (max diff ≤ 2.2e-8).
+- **Overlap with the 2,982 training images** (32×32 thumbnail correlation, `data_audit.sim_vector`):
+  - Whole image: best match median 0.833 (Shenzhen) / 0.750 (Montgomery), max 0.924 / 0.874. None ≥ 0.95.
+  - For scale: different training images best-match each other at a median of 0.874.
+  - **Crop search** (81 crops per image; a positive control of cropped, re-saved copies is recovered at 0.949–0.979, median 0.979): max 0.946 / 0.943. None ≥ 0.95.
+  - Visual check of the top 10 pairs from each method (non-expert): all are different radiographs.
+  - **Confirmed overlaps: 0.** The automatic ≥ 0.95 exclusion removes 0 images, so results with and without exclusions are identical.
+  - **Limitation:** overlap after heavier cropping or other transformations can't be fully ruled out.
+
+#### Results (frozen models, val-tuned thresholds unchanged, lossless PNG)
+95% CIs: stratified bootstrap, 2,000 resamples, seed 42. Values truncated to 3 decimals. Full tables: `artifacts/external/evaluation/summary.md`.
+
+| model | data | n (N/TB) | ROC-AUC | sensitivity | specificity | PPV | NPV | Brier |
+|---|---|---|---|---|---|---|---|---|
+| **ResNet50** | internal test | 448 (77/371) | 0.998 (0.996–0.999) | 0.935 (0.908–0.959) | 1.000 (77/77) | 1.000 | 0.762 | 0.026 |
+| | Shenzhen | 662 (326/336) | **0.669** (0.628–0.709) | 0.907 (0.875–0.937) | **0.208** (0.165–0.254) | 0.541 | 0.686 | 0.320 |
+| | Montgomery | 138 (80/58) | **0.656** (0.559–0.748) | 1.000 | **0.000** | 0.420 | undefined\* | 0.554 |
+| | pooled (secondary) | 800 (406/394) | 0.619 (0.581–0.657) | 0.921 | 0.167 | 0.517 | 0.686 | 0.361 |
+| VGG16 | internal test | 448 | 0.991 (0.982–0.998) | 0.929 | 0.987 | 0.997 | 0.745 | 0.072 |
+| | Shenzhen | 662 | 0.470 (0.427–0.514) | 0.699 | 0.165 | 0.463 | 0.348 | 0.383 |
+| | Montgomery | 138 | 0.581 (0.479–0.683) | 0.965 | 0.000 | 0.411 | 0.000 | 0.516 |
+| EfficientNetB0 | internal test | 448 | 0.996 (0.991–0.999) | 0.946 | 0.987 | 0.997 | 0.791 | 0.071 |
+| | Shenzhen | 662 | 0.521 (0.477–0.565) | 0.476 | 0.533 | 0.512 | 0.497 | 0.289 |
+| | Montgomery | 138 | 0.537 (0.442–0.639) | 1.000 | 0.012 | 0.423 | 1.000 | 0.384 |
+
+\* ResNet50 flags every Montgomery image as TB, so no image is predicted Normal and NPV is undefined.
+
+**Oracle analysis** (*not a result*: the threshold is chosen on the external data itself). The threshold ResNet50 would need for 95% sensitivity is 0.517 on Shenzhen, giving specificity 0.141, and 0.911 on Montgomery, giving specificity 0.025. No operating point rescues the models on these sites.
+
+**Interpretation:**
+- **(a) The site affects the score far more than the disease does.**
+  - EfficientNetB0's mean P(TB) moves by about 0.44 between sites (Shenzhen 0.327 / 0.351 → Montgomery 0.771 / 0.789 for Normal / TB), but only about 0.02 between Normal and TB within a site.
+  - ResNet50's mean P(TB) for Normal images goes from 0.051 internally to 0.751 (Shenzhen) and 0.978 (Montgomery). The TB − Normal gap within a site is only +0.096 and +0.005.
+- **(b) VGG16 ranks Normal slightly above TB on Shenzhen** (AUC 0.470, CI 0.427–0.514, which includes 0.5). On Montgomery its AUC is 0.581 and the median P(TB) is higher for TB (0.996 vs 0.986); only the mean is higher for Normal (0.908 vs 0.891).
+- **(c) Every external Brier score is worse than a constant base-rate predictor:** π(1 − π) = 0.250 (Shenzhen), 0.244 (Montgomery), 0.250 (pooled). The models' Brier scores are 0.289–0.555.
+- **(d) Shenzhen subgroups:** ResNet50 AUC is 0.609 (0.532–0.680) for women and 0.698 (0.651–0.744) for men. The CIs overlap, so **no sex disparity is claimed**.
+  - Specificity is 0.142 for women and 0.240 for men.
+  - The ≥ 60 group is small (17 Normal), with specificity 0.058.
+  - Every Montgomery subgroup has fewer than 30 images in a class (flagged) and specificity 0.000.
+- **Bottom line:** the internal AUC of 0.998 doesn't transfer. ResNet50 keeps some real signal (AUC about 0.66 on both sites, with CIs above 0.5), but at the val-tuned threshold it flags almost every external image as TB. VGG16 and EfficientNetB0 are at chance.
+
+#### Pre-registered hypotheses: verdicts
+| | verdict | numbers |
+|---|---|---|
+| **H1** external AUC < internal | **Supported**, 6 of 6 model–site pairs | Every external CI upper bound (≤ 0.748) is below the internal point estimate (≥ 0.991) |
+| **H2** Montgomery specificity low | **Supported** | ResNet50 specificity 0.000 (< 0.80); VGG16 0.000, EfficientNetB0 0.012 |
+| **H3** overlap inflates results | **Not testable** | 0 confirmed overlaps (whole-image check and crop search) |
+| **H4** JPEG AUC > PNG AUC | **Not supported** | The literal rule was met in 4 of 6 point estimates, but every per-site paired 95% CI of (JPEG − PNG) includes 0, and \|diff\| ≤ 0.012. The pre-registered rule was **underspecified**: it had no CI requirement. The pooled EfficientNetB0 CI excluding 0 (+0.009, CI +0.0001 to +0.018) is a secondary analysis and negligible in size. |
+| **H5** most external Normals flagged TB; AUC holds better than specificity | **Prediction supported; stated reason only partly supported** | ResNet50 specificity 0.208 / 0.000 (< 0.80) and AUC 0.669 / 0.656 (> specificity) on both sites, so the prediction holds. The reason (98% of external images most resemble a training TB image) depends on the matching method. With crop search, the share closest to a training **Normal** image rises from 2% to 24% (193/800), and all top-10 strongest matches are Normal, but 76% are still closest to a training TB image. *Exploratory, post hoc:* on Shenzhen, Normal images whose crop-search neighbour is a training TB image get higher ResNet50 scores than those closest to a training Normal (mean 0.791 vs 0.674, Mann–Whitney p = 3e-7), which is consistent with the reason. On Montgomery all scores are saturated (≈ 0.98), so it can't be tested there. |
+| **H6** Grad-CAM lung energy ≤ lung area (Montgomery) | **Supported** for both models | Median inside-lung energy vs median lung-area share: ResNet50 0.186 vs 0.257 (median per-image difference −0.070, Wilcoxon p = 8e-21); VGG16 0.169 vs 0.257 (−0.086, p = 3e-16). 0 empty maps. Energy exceeds area in only 11% (ResNet50) / 22% (VGG16) of images. |
+
+#### Grad-CAM on the external sets (stage `gradcam`; 13 min 18 s on CPU)
+- **Mask geometry:** masks follow the image path (original → 256 → 224, nearest-neighbour). A unit test with a synthetic non-square image confirms alignment (IoU > 0.95), and [mask_alignment.png](../artifacts/external/gradcam/mask_alignment.png) shows 4 real Montgomery images with the mask contour on the original and on the model input. The Grad-CAM forward pass reproduced the saved predictions (< 1e-4).
+- **Lung-mask energy (Montgomery, TB-evidence map, medians):**
+
+| model | group | n | energy inside lungs | lung-area share | energy − area |
+|---|---|---|---|---|---|
+| ResNet50 | Normal | 80 | 0.162 | 0.246 | −0.091 |
+| ResNet50 | TB | 58 | 0.230 | 0.263 | −0.035 |
+| VGG16 | Normal | 80 | 0.143 | 0.246 | −0.100 |
+| VGG16 | TB | 58 | 0.225 | 0.263 | −0.025 |
+| VGG16 | correct / wrong | 56 / 82 | 0.231 / 0.143 | 0.262 / 0.250 | −0.023 / −0.100 |
+
+  - ResNet50 flags every Montgomery image as TB, so for ResNet50 "correct" = TB and "wrong" = Normal.
+  - **Resolution-ceiling control** (robustness check, not a new hypothesis; stage `ceiling`): each lung mask is averaged onto the Grad-CAM grid and upsampled exactly like the heatmaps. That gives the lung-energy share of a map that is *perfectly* on the lungs at that resolution.
+    - Median ceiling **0.682** for ResNet50 (7×7) and **0.825** for VGG16 (14×14), against observed **0.186** / **0.169** and a lung-area share of 0.257.
+    - The coarse grid would allow up to 0.68–0.82, so the low observed share is not a resolution artefact. Outputs: `artifacts/external/gradcam/h6_resolution_ceiling.{json,csv}`.
+  - TB images draw more energy into the lungs than Normal images, but even for TB it stays below the lungs' area share.
+- **Goal 4's "lungs hidden" box, checked with real anatomy:** on Montgomery, a median 94% (minimum 80%) of the true lung area lies inside the central 170×170 box masked in goal 4. So that test hid most of the lungs, at least for this image geometry.
+- **Border energy vs the internal test** (TB-evidence map, outer 12% border, medians; uniform reference 0.424):
+
+| model | class | internal test | Shenzhen | Montgomery |
+|---|---|---|---|---|
+| ResNet50 | Normal | 0.437 | 0.606 | 0.471 |
+| ResNet50 | TB | 0.332 | 0.530 | 0.422 |
+| VGG16 | Normal | 0.523 | 0.777 | 0.517 |
+| VGG16 | TB | 0.449 | 0.690 | 0.444 |
+
+  On Shenzhen both models put far more of their TB evidence on the border than on the internal test.
+- **Galleries** ([gallery_shenzhen.png](../artifacts/external/gradcam/gallery_shenzhen.png), [gallery_montgomery.png](../artifacts/external/gradcam/gallery_montgomery.png); ResNet50, predicted-class maps; qualitative, non-expert):
+  - **Montgomery:** hot spots in false and true positives often sit on the white "PA ERECT" label and the shoulders and edges; the lung fields are mostly cool. There are no FN or TN to show.
+  - **Shenzhen:** false positives light up corner "L"/"ap" markers and lateral edges. Some true positives highlight visible lung opacities, consistent with the remaining signal (AUC 0.669). In FN and TN, the Normal evidence sits along the bottom band.
+- **Tests:** `tests/test_external.py` (23 tests) covers the readings parser and corrections, age bands, grayscale and 16-bit conversion, crop search (finds a cropped copy), mask/image alignment, a real-mask check (skips without data), and the metric/subgroup helpers.
+
+#### Data sources and use terms
+- **Shenzhen:** National Library of Medicine, NIH (Bethesda, MD, USA) and Shenzhen No.3 People's Hospital, Guangdong Medical College (Shenzhen, China).
+- **Montgomery:** National Library of Medicine, NIH, with the Montgomery County (MD) Department of Health and Human Services.
+- **Cited:**
+  - Jaeger S, Candemir S, Antani S, Wáng YX, Lu PX, Thoma G. Two public chest X-ray datasets for computer-aided screening of pulmonary diseases. *Quant Imaging Med Surg.* 2014;4(6):475–477.
+  - Jaeger S, et al. Automatic tuberculosis screening using chest radiographs. *IEEE Trans Med Imaging.* 2014;33(2):233–245. doi:10.1109/TMI.2013.2284099.
+  - Candemir S, et al. Lung segmentation in chest radiographs using anatomical atlases with nonrigid registration. *IEEE Trans Med Imaging.* 2014;33(2):577–590. doi:10.1109/TMI.2013.2290491.
+- **Use terms:** both NLM ReadMes ask users **not to share the dataset outside their research group or organisation**. The images and clinical readings are not committed (`data/` is gitignored).
+- **Decision (cautious option):** the repository contains only:
+  - summary-level outputs;
+  - per-image files without patient data (file name, label, scores, attention shares);
+  - predictions reduced to `site, file, label, prob` (`artifacts/external/predictions_public/`);
+  - image-free figures, including `gradcam/h6_lung_energy.png`.
+- **Kept local** (gitignored):
+  - per-image clinical readings: `inventory.csv`, `readings_*.csv`, `sample_preprocessing.csv`;
+  - the full prediction CSVs (`predictions/`, with age, sex and findings);
+  - the 6 figures that show NLM images (galleries, mask alignment, overlap pairs, crop-search top 10, preprocessing examples).
+  - A dry-run staging check confirmed that none of these would be committed, and that no committed CSV has a sex, age or findings column.
+
+### Goals 8, 10: not started

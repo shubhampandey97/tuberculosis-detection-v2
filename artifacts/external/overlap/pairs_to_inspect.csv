@@ -1,0 +1,11 @@
+site,file,best_corr,match_path,match_label,match_split,second_corr,label,png_path
+shenzhen,CHNCXR_0519_1.png,0.9241602420806885,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.7929965257644653,1,data/external/prepared/png/shenzhen/CHNCXR_0519_1.png
+shenzhen,CHNCXR_0437_1.png,0.9081485271453857,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8364335298538208,1,data/external/prepared/png/shenzhen/CHNCXR_0437_1.png
+shenzhen,CHNCXR_0472_1.png,0.9077444076538086,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8163406848907471,1,data/external/prepared/png/shenzhen/CHNCXR_0472_1.png
+shenzhen,CHNCXR_0476_1.png,0.9074484705924988,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8161057233810425,1,data/external/prepared/png/shenzhen/CHNCXR_0476_1.png
+shenzhen,CHNCXR_0142_0.png,0.9056745171546936,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (42).jpg,0,train,0.8773866295814514,0,data/external/prepared/png/shenzhen/CHNCXR_0142_0.png
+shenzhen,CHNCXR_0618_1.png,0.9008409976959229,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8060516119003296,1,data/external/prepared/png/shenzhen/CHNCXR_0618_1.png
+shenzhen,CHNCXR_0235_0.png,0.8992700576782227,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8332129716873169,0,data/external/prepared/png/shenzhen/CHNCXR_0235_0.png
+shenzhen,CHNCXR_0614_1.png,0.8989949226379395,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8031465411186218,1,data/external/prepared/png/shenzhen/CHNCXR_0614_1.png
+shenzhen,CHNCXR_0100_0.png,0.8972285985946655,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.826.jpg,1,train,0.8408863544464111,0,data/external/prepared/png/shenzhen/CHNCXR_0100_0.png
+shenzhen,CHNCXR_0091_0.png,0.8968663811683655,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.812.jpg,1,train,0.8500126600265503,0,data/external/prepared/png/shenzhen/CHNCXR_0091_0.png

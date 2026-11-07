@@ -1,0 +1,17 @@
+features,model,roc_auc_mean,roc_auc_std,site
+width + height + aspect,logistic regression,0.7107983529493627,0.04239809834229395,shenzhen
+width + height + aspect,decision tree (depth 3),0.741852287308828,0.03229137167479052,shenzhen
+file size (KB),logistic regression,0.5317606742101912,0.030128033393454257,shenzhen
+file size (KB),decision tree (depth 3),0.6552909966825683,0.025852824641483613,shenzhen
+brightness/contrast,logistic regression,0.7047590922393381,0.0388407953236749,shenzhen
+brightness/contrast,decision tree (depth 3),0.7210889812557942,0.04709976997933994,shenzhen
+all metadata,logistic regression,0.8547136387171506,0.025526457555683613,shenzhen
+all metadata,decision tree (depth 3),0.7913191754104835,0.042924376164079035,shenzhen
+width + height + aspect,logistic regression,0.5782196969696971,0.04422500565161316,montgomery
+width + height + aspect,decision tree (depth 3),0.5782196969696971,0.04422500565161316,montgomery
+file size (KB),logistic regression,0.5576704545454545,0.09482018499050994,montgomery
+file size (KB),decision tree (depth 3),0.5333333333333334,0.08244109554335963,montgomery
+brightness/contrast,logistic regression,0.6017992424242424,0.07742831002480041,montgomery
+brightness/contrast,decision tree (depth 3),0.5846117424242424,0.03125057391575839,montgomery
+all metadata,logistic regression,0.6374053030303031,0.0341873110881779,montgomery
+all metadata,decision tree (depth 3),0.5635416666666666,0.06232301761116895,montgomery

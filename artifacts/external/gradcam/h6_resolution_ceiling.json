@@ -1,0 +1,12 @@
+{
+  "method": "mask averaged onto the Grad-CAM grid, upsampled with gradcam.upsample (bilinear), lung-energy share computed as for the heatmaps",
+  "resnet_conv5_7x7": {
+    "median_ceiling": 0.6821028888225555,
+    "observed_median": 0.18590538203716278
+  },
+  "vgg_block5_14x14": {
+    "median_ceiling": 0.8248897790908813,
+    "observed_median": 0.16887974739074707
+  },
+  "median_lung_area": 0.25715481505102045
+}
