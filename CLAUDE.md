@@ -10,9 +10,10 @@ Refer to them by section number.
 - Run modules from the repo root, e.g. ...\python.exe -m src.pipeline.train_pipeline
 - requirements.txt = 12 direct deps pinned (Linux-safe). requirements-lock.txt = exact Windows env.
   Never upgrade protobuf above 4.x. OpenCV and tqdm were removed (nothing uses them).
-- Git: work on branch upgrade-v4. main has goals 1–6 merged (PR #10).
+- Git: work on branch upgrade-v4. main has goals 1–7 merged (PRs #10, #11); goal 9 is on upgrade-v4.
+- Local pytest: set PYTHONNOUSERSITE=1 (a user-site platformdirs breaks pytest). Lint: ruff check .
 
-# Current state (goals 1–6 DONE; do not redo)
+# Current state (goals 1–7 and 9 DONE; do not redo)
 - Data: 2,982 images after removing 26 exact duplicates (509 Normal / 2,473 TB).
   data/splits.csv = stratified seeded 70/15/15 (train 2,087 / val 447 / test 448; test = 77 Normal, 371 TB).
   Labels 0 = Normal, 1 = TB. 124 TB images are non-square. No patient IDs.
@@ -26,6 +27,15 @@ Refer to them by section number.
   0.974 (VGG), 0.912 (EffNet); Grad-CAM attention on handwritten annotations; 7 TB images missed by all
   models look like the Normal source. Internal scores are an upper bound, not clinical performance.
 - Per-image predictions: artifacts/predictions/{model}_{val,test}.csv. Old invalid results: artifacts/legacy/.
+- Tests/CI (goal 7): pytest suite in tests/ (data/model tests auto-skip), GitHub Actions ruff + pytest.
+- EXTERNAL VALIDATION (goal 9; src/pipeline/external_validation.py, docs/audit.md goal 9, artifacts/external/):
+  frozen models, val-tuned thresholds unchanged, 0 overlaps with training (incl. crop search).
+  ResNet50 AUC 0.669 (Shenzhen, 662) / 0.656 (Montgomery, 138) vs 0.998 internal; specificity at the
+  tuned threshold 0.208 / 0.000 (flags every Montgomery image TB). VGG16 0.470 / 0.581, EffNet 0.521 / 0.537
+  (chance). Pre-registered H1, H2, H6 supported; H3 not testable; H4 not supported; H5 prediction supported,
+  stated reason only partly. Montgomery Grad-CAM energy inside true lung masks 0.186 (ResNet) / 0.169 (VGG)
+  < lung-area share 0.257 (resolution ceiling 0.682 / 0.825). Shenzhen metadata AUC 0.855 (flagged).
+  NLM terms: don't redistribute the NLM data; external data lives in data/external/ (not committed).
 
 # Working rules
 - Show a plan first and wait for approval before editing.
@@ -36,19 +46,10 @@ Refer to them by section number.
 - Any new inference path must pass a parity test against artifacts/predictions/ (two past bugs were
   train/inference mismatches).
 
-# Remaining goals (order: 7 → 9 → 8 → 10)
-7. ENGINEERING: __init__.py files, pytest (label mapping, preprocessing parity app vs training,
-   CaffePreprocess vs keras preprocess_input, image modes, prediction range, reload, Grad-CAM NaN guard,
-   make_splits logic, metric functions); data/model-dependent tests auto-skip when files are missing;
-   GitHub Actions CI (Ubuntu, Python 3.10, ruff + pytest); .gitattributes for line endings; CI badge.
-9. EXTERNAL VALIDATION: evaluate the frozen ResNet50/VGG16/EffNet (no retraining) on the NLM Shenzhen set
-   (662 CXRs, 336 TB / 326 Normal, one hospital) and Montgomery set (138 CXRs, 58 TB / 80 Normal,
-   one hospital), where both classes share one acquisition pipeline. FIRST check for overlap with the
-   training data (some public TB collections include these images). Same metrics/CIs as goal 4,
-   val-tuned thresholds applied unchanged, plus subgroups by sex/age from the clinical readings.
-   Data in data/external/ (not committed).
+# Remaining goals (order: 10 → 8)
+10. SHORTCUT REMOVAL: retrain on lung crops or lung segmentations (markers, labels, borders removed);
+   re-run the lungs-hidden test and evaluate with the SAME goal-9 external pipeline and pre-registration
+   approach. Success = external AUC rises and lungs-hidden AUC drops.
 8. MLOPS + SERVING: FastAPI /predict reusing inference.py; working Dockerfile (CPU, .dockerignore,
    serving command, no CUDA base); MODEL_CARD.md including external-validation results;
    optional MLflow tracking and DVC for data.
-10. (optional) SHORTCUT REMOVAL: retrain with border masking / lung crops; re-run the lungs-hidden test
-   and external validation.

@@ -669,6 +669,16 @@ Same `data_audit.py` functions, unchanged; labels come from the `_0`/`_1` file s
   - Jaeger S, Candemir S, Antani S, Wáng YX, Lu PX, Thoma G. Two public chest X-ray datasets for computer-aided screening of pulmonary diseases. *Quant Imaging Med Surg.* 2014;4(6):475–477.
   - Jaeger S, et al. Automatic tuberculosis screening using chest radiographs. *IEEE Trans Med Imaging.* 2014;33(2):233–245. doi:10.1109/TMI.2013.2284099.
   - Candemir S, et al. Lung segmentation in chest radiographs using anatomical atlases with nonrigid registration. *IEEE Trans Med Imaging.* 2014;33(2):577–590. doi:10.1109/TMI.2013.2290491.
-- **Use terms:** both NLM ReadMes ask users **not to share the dataset outside their research group or organisation**. The images and clinical readings are not committed (`data/` is gitignored). Whether derived per-image files and figures may be published is an open decision (see the goal 9 report).
+- **Use terms:** both NLM ReadMes ask users **not to share the dataset outside their research group or organisation**. The images and clinical readings are not committed (`data/` is gitignored).
+- **Decision (cautious option):** the repository contains only:
+  - summary-level outputs;
+  - per-image files without patient data (file name, label, scores, attention shares);
+  - predictions reduced to `site, file, label, prob` (`artifacts/external/predictions_public/`);
+  - image-free figures, including `gradcam/h6_lung_energy.png`.
+- **Kept local** (gitignored):
+  - per-image clinical readings: `inventory.csv`, `readings_*.csv`, `sample_preprocessing.csv`;
+  - the full prediction CSVs (`predictions/`, with age, sex and findings);
+  - the 6 figures that show NLM images (galleries, mask alignment, overlap pairs, crop-search top 10, preprocessing examples).
+  - A dry-run staging check confirmed that none of these would be committed, and that no committed CSV has a sex, age or findings column.
 
 ### Goals 8, 10: not started
