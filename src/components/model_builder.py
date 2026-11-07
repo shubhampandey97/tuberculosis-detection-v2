@@ -30,7 +30,8 @@ class CaffePreprocess(layers.Layer):
         return x - tf.constant(IMAGENET_BGR_MEAN, dtype=x.dtype)
 
 
-def build_model(model_name, img_size=(224, 224), learning_rate=1e-4):
+def build_model(model_name, img_size=(224, 224), learning_rate=1e-4, weights="imagenet"):
+    """weights="imagenet" for real training; tests pass weights=None to avoid downloading weights."""
     if model_name not in BASES:
         raise ValueError(f"Invalid model name '{model_name}', expected one of {list(BASES)}")
 
@@ -39,7 +40,7 @@ def build_model(model_name, img_size=(224, 224), learning_rate=1e-4):
 
     # Building the base on our tensor keeps all layers in one flat graph,
     # so Grad-CAM can find e.g. "block5_conv3" with model.get_layer().
-    base = BASES[model_name](weights="imagenet", include_top=False, input_tensor=x)
+    base = BASES[model_name](weights=weights, include_top=False, input_tensor=x)
     base.trainable = False  # frozen; BatchNorm layers also run in inference mode
 
     x = layers.GlobalAveragePooling2D(name="gap")(base.output)

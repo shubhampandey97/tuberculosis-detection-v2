@@ -31,7 +31,6 @@ Only needs: numpy, pandas, pillow, scikit-learn (no extra installs).
 import argparse
 import hashlib
 import os
-from itertools import combinations
 
 import numpy as np
 import pandas as pd
@@ -182,7 +181,7 @@ def write_report(out_dir, data_dir, df, classes, skipped, dups, cross, near, sho
     counts = df.groupby("class").agg(files=("path", "size"), mean_kb=("file_kb", "mean"))
     counts["share_%"] = 100 * counts["files"] / counts["files"].sum()
     lines += [md_table(counts.round(1)), "",
-              f"Label mapping (alphabetical, same as Keras): "
+              "Label mapping (alphabetical, same as Keras): "
               + ", ".join(f"`{c}` = {i}" for i, c in enumerate(classes)), "",
               f"Extensions: {df['ext'].value_counts().to_dict()}",
               f"Non-image files skipped: {len(skipped)}", ""]

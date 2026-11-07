@@ -2,6 +2,7 @@
 
 > **TL;DR:** ROC-AUC 0.998 on the internal test set, but the models still separate the classes with the lungs hidden (AUC ≈ 0.97). They partly detect *which source an image comes from*, not TB. See [Key finding](#key-finding-dataset-confounding).
 
+[![CI](https://github.com/shubhampandey97/tuberculosis-detection-v2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shubhampandey97/tuberculosis-detection-v2/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.60-red)
@@ -119,6 +120,14 @@ python -m src.pipeline.evaluate_clinical    # CIs, threshold, calibration, maski
 python -m src.pipeline.gradcam_analysis     # Grad-CAM attention + galleries (about 9 min)
 ```
 
+**Tests and lint** (the same checks CI runs). Tests that need the dataset images or the trained models skip automatically when those are missing.
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+
 **4. Demo app** (needs the trained ResNet50 and `artifacts/clinical/thresholds.json`):
 
 ```bash
@@ -152,6 +161,8 @@ artifacts/                     metrics, predictions, clinical/, gradcam/, legacy
 notebooks/01_data_audit.ipynb  data audit with plots
 docs/audit.md                  full code audit and status of every upgrade goal
 docs/failure_analysis.md       Grad-CAM failure analysis
+tests/                         pytest suite (synthetic data; data/model tests auto-skip)
+.github/workflows/ci.yml       CI: ruff + pytest on Ubuntu, Python 3.10
 legacy/pytorch/                unused early PyTorch prototype (not maintained)
 ```
 

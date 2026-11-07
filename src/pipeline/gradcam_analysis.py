@@ -116,7 +116,7 @@ def sanity(model, name, test, thr, img_size, masks):
 # ---------------------------------------------------------------- full pass
 def analyse_model(model, name, test, thr, img_size, masks):
     from src.components.gradcam import gradcam_signed, to_heatmap, upsample
-    rows, store = [], {}
+    store = {}
     pred_tb = (test["prob"].values >= thr)
     sign = np.where(pred_tb, 1.0, -1.0)
     for sl in batches(len(test)):
@@ -171,7 +171,10 @@ def summarise(dfs, uniform):
         for layer in LAYERS[name]:
             for kind in ("tb", "pred"):
                 key = f"{name}/{layer}/{kind}"
-                col = lambda r: f"{layer}__{kind}__{r}"
+
+                def col(r, layer=layer, kind=kind):
+                    return f"{layer}__{kind}__{r}"
+
                 groups = {"all": df, "Normal": df[df.label == 0], "TB": df[df.label == 1],
                           "correct": df[df.correct], "wrong": df[~df.correct],
                           "TB correct": df[(df.label == 1) & df.correct],
@@ -202,7 +205,9 @@ def boxplot(dfs, path):
         ax.set(title=f"{NAMES[name]} ({PRIMARY_LAYER[name]}), TB-evidence map",
                ylabel="Grad-CAM energy in outer 12% border", ylim=(0, 1))
         ax.legend(fontsize=8)
-    fig.tight_layout(); fig.savefig(path, dpi=120); plt.close(fig)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
 
 
 def gallery(rows, dfs, heat, img_size, title, path, border_px):
@@ -224,11 +229,14 @@ def gallery(rows, dfs, heat, img_size, title, path, border_px):
             ax.set_title(f"{NAMES[name]}: P(TB)={d['prob']:.3f} -> {verdict} ({ok})\n"
                          f"border energy {d[PRIMARY_LAYER[name] + '__pred__border']:.2f}", fontsize=8)
         for ax in axes[i]:
-            ax.set_xticks([]); ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
     fig_h = 3.1 * len(rows)
     fig.suptitle(title + "\n(predicted-class Grad-CAM; dashed box = inner edge of the 12% border)",
                  fontsize=10, y=1 - 0.15 / fig_h)
-    fig.tight_layout(rect=(0, 0, 1, 1 - 0.75 / fig_h)); fig.savefig(path, dpi=110); plt.close(fig)
+    fig.tight_layout(rect=(0, 0, 1, 1 - 0.75 / fig_h))
+    fig.savefig(path, dpi=110)
+    plt.close(fig)
 
 
 # ---------------------------------------------------------------- main
@@ -323,7 +331,9 @@ def make_galleries(dfs, img_size, border_px):
     base = dfs["resnet"][["path", "file", "label", "width", "height"]].copy()
     both_ok = dfs["resnet"]["correct"].values & dfs["vgg"]["correct"].values
     rng = np.random.default_rng(SEED)
-    pick = lambda m: base[m].iloc[np.sort(rng.choice(int(m.sum()), 10, replace=False))]
+    def pick(mask):
+        return base[mask].iloc[np.sort(rng.choice(int(mask.sum()), 10, replace=False))]
+
     errors = base[base.file.isin(SHARED_MISSES + SHARED_FP)]
     errors = errors.set_index("file").loc[SHARED_MISSES + SHARED_FP].reset_index()
     gallery(errors, dfs, heat, img_size, "Shared errors: 7 TB missed by all 3 models + the shared false positive",

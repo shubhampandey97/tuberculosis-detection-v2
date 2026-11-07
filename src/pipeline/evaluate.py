@@ -14,7 +14,6 @@ import keras
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, roc_curve
 
@@ -51,15 +50,22 @@ def test_metrics(name, test_pred, out_metrics, out_plots):
     os.makedirs(plot_dir, exist_ok=True)
     plt.figure()
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=CLASS_NAMES, yticklabels=CLASS_NAMES)
-    plt.xlabel("Predicted"); plt.ylabel("True"); plt.title(f"{name} - test confusion matrix")
-    plt.savefig(os.path.join(plot_dir, "confusion_matrix.png"), bbox_inches="tight"); plt.close()
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title(f"{name} - test confusion matrix")
+    plt.savefig(os.path.join(plot_dir, "confusion_matrix.png"), bbox_inches="tight")
+    plt.close()
 
     fpr, tpr, _ = roc_curve(y, p)
     plt.figure()
-    plt.plot(fpr, tpr, label=f"AUC={auc:.3f}"); plt.plot([0, 1], [0, 1], "k--", lw=0.8)
-    plt.xlabel("False positive rate"); plt.ylabel("True positive rate (sensitivity)")
-    plt.title(f"{name} - test ROC"); plt.legend()
-    plt.savefig(os.path.join(plot_dir, "roc_curve.png"), bbox_inches="tight"); plt.close()
+    plt.plot(fpr, tpr, label=f"AUC={auc:.3f}")
+    plt.plot([0, 1], [0, 1], "k--", lw=0.8)
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate (sensitivity)")
+    plt.title(f"{name} - test ROC")
+    plt.legend()
+    plt.savefig(os.path.join(plot_dir, "roc_curve.png"), bbox_inches="tight")
+    plt.close()
     return results
 
 
