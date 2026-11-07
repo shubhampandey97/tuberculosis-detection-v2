@@ -681,4 +681,43 @@ Same `data_audit.py` functions, unchanged; labels come from the `_0`/`_1` file s
   - the 6 figures that show NLM images (galleries, mask alignment, overlap pairs, crop-search top 10, preprocessing examples).
   - A dry-run staging check confirmed that none of these would be committed, and that no committed CSV has a sex, age or findings column.
 
-### Goals 8, 10: not started
+### Goal 10 — SHORTCUT REMOVAL: in progress (branch `upgrade-v4`)
+
+#### Pre-registration (written 2026-11-07 15:40, before any goal 10 code, training or results)
+At the time of writing, no goal 10 model, prediction or figure existed. The only models were the goal 3 models in `models/tensorflow/` and the old smoke-test folder.
+
+**Design (fixed now):**
+- **Training data:** Kaggle only (the train split of `data/splits.csv`). Val is used for early stopping and thresholds; test is the internal test. Shenzhen and Montgomery stay fully external. Kaggle + Shenzhen will be goal 10b, pre-registered separately.
+- **Models:** ResNet50 and EfficientNetB0 (VGG16 dropped). ImageNet weights, same head as goals 2–3.
+- **Inside the model** (so the external pipeline is unchanged and still feeds raw 0–255 RGB at 224×224):
+  1. **Central crop:** remove 12% of each edge (27 px at 224), then bilinear resize back to 224×224.
+  2. **Per-image standardisation:** z-score over the image, then rescale to mean 128 and SD 50, clipped to 0–255, so the backbone gets inputs in its expected range.
+  3. ResNet50: then `CaffePreprocess`. EfficientNetB0: nothing more.
+- **Training augmentation** (training split only). Every random choice is **independent of the label**, with the same probability for both classes:
+  - synthetic markers and text ("L", "R", "PA", "AP", "PA ERECT", dates, handwriting-like strokes; white, black or boxed; 1–3 items placed anywhere), probability 0.5;
+  - JPEG re-encoding at quality U(50, 95), probability 0.7;
+  - brightness ± 10% of 255, contrast × U(0.7, 1.3), gamma U(0.7, 1.4);
+  - the existing rotation ± 10° and zoom 0.1. No flips.
+- **Arm 1:** frozen backbone, head trained (≤ 20 epochs, EarlyStopping on val AUC, patience 4).
+- **Arm 2:** starts from Arm 1's weights. Fine-tunes ResNet50 `conv5_*` or EfficientNetB0 `block6a` onwards plus `top`. BatchNorm stays frozen. Learning rate 1e-5, ≤ 15 epochs, patience 4.
+- **Primary model, fixed now: ResNet50 Arm 2.** The Kaggle val set is confounded, so no arm or model is chosen by val or external results. All 4 combinations (2 models × 2 arms) are reported.
+- **Thresholds:** same rule as before (highest threshold with val sensitivity ≥ 0.95), on the new val predictions.
+- **Evaluation:** the goal 9 external pipeline is unchanged: same prepared images, same decode path, same statistics.
+  - Allowed changes: output paths via a config "tag", so goal 4/9 results are never overwritten.
+  - One required geometry change for Grad-CAM: for models with the internal crop, heatmaps are mapped back into the 224×224 input frame (resized into the central 170×170, zero outside) before lung-mask and border shares are computed.
+  - A regression test confirms the default configuration still reproduces the goal 9 predictions.
+
+**Success criteria** (comparisons against the goal 9 model of the same architecture, on the same images; 95% CIs from a stratified bootstrap with 2,000 resamples, seed 42):
+| | criterion | decision rule |
+|---|---|---|
+| **S1** (primary endpoint) | external AUC rises | ResNet50 Arm 2: the paired bootstrap 95% CI of ΔAUC (goal 10 − goal 9 ResNet50, lossless PNG) lies entirely above 0 on **both** Shenzhen and Montgomery. Secondary: AUC ≥ 0.80 on each site. |
+| **S2** (primary version) | lungs-hidden AUC drops | Internal test, goal 4 method (fill = the image's own mean grey). The hidden region is the central box of the **cropped field**, leaving 12% of that field on each side: input pixels 47–176, so 130×130 hidden and a 20-px ring of the cropped field visible. Success: AUC ≤ 0.75 (goal 4 lungs-hidden AUC was 0.971). The original goal 4 version (central 170×170 of the input hidden) is also reported, labelled **trivially affected by the crop**: it hides the whole cropped field. |
+| **S3** | more Grad-CAM energy inside the lungs (Montgomery) | Primary model, TB-evidence map mapped into the input frame: median over images of (energy inside the lung masks − lung-area share) **> 0**. Reported alongside: a paired Wilcoxon test against goal 9 ResNet50 (per image), and the resolution ceiling. |
+| **S4a** | weaker shortcut signal in the processed inputs | The `data_audit` shortcut test (5-fold CV ROC-AUC, logistic regression and depth-3 tree, seed 42) on what the backbone sees: the cropped, standardised model input for all 2,982 Kaggle images. Features: dark share (< 10), bright share (> 245), the 5th / 50th / 95th percentiles, skewness and kurtosis of a 64×64 thumbnail, plus original width, height and aspect. Mean and SD are constant after standardisation by design, so they're excluded. Success: all-feature AUC ≤ 0.75 for both models' inputs. The raw audit was 0.918, and some real pathology signal in intensity is expected. |
+| **S4b** | site effect no longer dominates | Primary model, PNG external predictions. Within-site gap gₛ = mean P(TB \| TB) − mean P(TB \| Normal), per site. Between-site shift d = \|mean P(TB \| Normal, Shenzhen) − mean P(TB \| Normal, Montgomery)\|. Success: min(g_Shenzhen, g_Montgomery) > d. Goal 9 ResNet50: g = 0.096 / 0.005 vs d = 0.227. |
+
+- **Expected, not a failure:** the internal test AUC (0.998 for goal 9 ResNet50) may **drop** once the shortcuts are gone. It will be reported but not counted.
+- **Secondary result (not a criterion):** external specificity at the new val-tuned thresholds.
+- **Reporting:** each criterion is reported on its own for all 4 model–arm combinations, with the primary model's verdict decisive. Any analysis added after seeing results is labelled post hoc.
+
+### Goals 8, 10b: not started
