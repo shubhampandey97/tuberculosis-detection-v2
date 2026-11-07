@@ -687,7 +687,7 @@ def load_or_predict(config, inv):
             continue
         model = inference.load_model(m)
         # Parity (CLAUDE.md rule): this path must reproduce the saved internal test predictions.
-        saved = pd.read_csv(f"artifacts/predictions/{m}_test.csv").head(32)
+        saved = pd.read_csv(os.path.join(INTERNAL_PRED_DIR, f"{m}_test.csv")).head(32)  # same model's evaluate.py output
         diff = np.abs(predict_paths(model, config, saved.path, saved.label) - saved.prob.values).max()
         assert diff < 1e-4, f"{m}: parity check failed ({diff})"
         print(f"[evaluate] {m}: parity with saved internal test predictions OK (max diff {diff:.1e})")
@@ -1205,13 +1205,16 @@ def stage_h6plot():
 
 CONFIG_TAG = "default"
 CLINICAL_DIR = "artifacts/clinical"
+INTERNAL_PRED_DIR = "artifacts/predictions"
 
 
 def configure(config):
     """Model-dependent outputs go to the config's external_dir (default: artifacts/external, unchanged).
     Shared inputs (inventory, prepared images, overlap, data audit) always stay in artifacts/external."""
     global CONFIG_TAG, CLINICAL_DIR, EVAL_DIR, PRED_DIR, GRADCAM_DIR, PUBLIC_PRED_DIR, MODELS, CAM_MODELS
+    global INTERNAL_PRED_DIR
     CONFIG_TAG = config.get("tag", "default")
+    INTERNAL_PRED_DIR = config["artifacts"].get("predictions_dir", "artifacts/predictions")
     out = config["artifacts"].get("external_dir", OUT_DIR)
     CLINICAL_DIR = config["artifacts"].get("clinical_dir", "artifacts/clinical")
     EVAL_DIR, PRED_DIR = os.path.join(out, "evaluation"), os.path.join(out, "predictions")

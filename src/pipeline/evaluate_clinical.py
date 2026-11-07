@@ -393,8 +393,8 @@ def main():
     with open(os.path.join(OUT_DIR, "shared_errors.json"), "w") as f:
         json.dump(shared, f, indent=2)
     md.append("### Shared errors (TEST)\n" + md_table(
-        ["error @ threshold", "VGG16", "ResNet50", "EfficientNetB0", "union", "all 3", "exactly 2", "exactly 1",
-         "all-3 non-square"],
+        ["error @ threshold"] + [NAMES[m] for m in models] + ["union", "all 3", "exactly 2", "exactly 1",
+                                                              "all-3 non-square"],
         [[k] + [v["per_model"][m] for m in models] + [v["union"], v["all_3"], v["exactly_2"], v["exactly_1"],
                                                        v["all_3_nonsquare"]] for k, v in shared.items()]))
     for k, v in shared.items():
