@@ -1,0 +1,3 @@
+path_a,class_a,path_b,class_b,corr
+data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (507).jpg,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (508).jpg,Normal Chest X-rays,0.9921
+data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.1889.jpg,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.2246.jpg,TB Chest X-rays,0.9915

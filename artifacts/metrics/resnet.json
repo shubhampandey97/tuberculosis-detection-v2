@@ -1,0 +1,44 @@
+{
+    "model": "resnet",
+    "split": "test",
+    "n": 448,
+    "threshold": 0.5,
+    "roc_auc": 0.9983197395596318,
+    "confusion_matrix": [
+        [
+            76,
+            1
+        ],
+        [
+            17,
+            354
+        ]
+    ],
+    "classification_report": {
+        "Normal": {
+            "precision": 0.8172043010752689,
+            "recall": 0.987012987012987,
+            "f1-score": 0.8941176470588236,
+            "support": 77.0
+        },
+        "TB": {
+            "precision": 0.9971830985915493,
+            "recall": 0.954177897574124,
+            "f1-score": 0.9752066115702479,
+            "support": 371.0
+        },
+        "accuracy": 0.9598214285714286,
+        "macro avg": {
+            "precision": 0.9071936998334091,
+            "recall": 0.9705954422935554,
+            "f1-score": 0.9346621293145357,
+            "support": 448.0
+        },
+        "weighted avg": {
+            "precision": 0.9662492427684386,
+            "recall": 0.9598214285714286,
+            "f1-score": 0.9612694457948469,
+            "support": 448.0
+        }
+    }
+}

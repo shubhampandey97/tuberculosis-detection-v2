@@ -1,9 +1,8 @@
-from src.components.data_loader import load_datasets, apply_augmentation
+from src.components.data_loader import make_dataset
+from src.utils.config_loader import load_config
 
-DATA_PATH = "data/Dataset of Tuberculosis Chest X-rays Images"
-
-train_ds, val_ds = load_datasets(DATA_PATH)
-train_ds = apply_augmentation(train_ds)
+config = load_config()
+train_ds = make_dataset(config, "train", training=True)
 
 for images, labels in train_ds.take(1):
-    print(images.shape, labels.shape)
+    print(images.shape, labels.shape, float(images.numpy().min()), float(images.numpy().max()))

@@ -1,37 +1,55 @@
+"""Transfer-learning models that take raw 0-255 RGB input.
+
+Each model contains its own preprocessing, so a saved model needs no outside scaling:
+  vgg, resnet   -> CaffePreprocess (RGB->BGR, subtract ImageNet mean), same as Keras preprocess_input
+  efficientnet  -> nothing (Keras EfficientNetB0 rescales and normalises internally)
+The base network is frozen; only the classification head is trained.
+"""
+import keras
 import tensorflow as tf
-from tensorflow.keras.applications import ResNet50, VGG16, EfficientNetB0
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
-from tensorflow.keras.models import Model
+from keras import layers
 
-IMG_SIZE = (224, 224)
+IMAGENET_BGR_MEAN = (103.939, 116.779, 123.68)
 
-def build_model(model_name):
+BASES = {
+    "vgg": keras.applications.VGG16,
+    "resnet": keras.applications.ResNet50,
+    "efficientnet": keras.applications.EfficientNetB0,
+}
+NEEDS_CAFFE = {"vgg", "resnet"}
+# Last convolutional layer per model (used by Grad-CAM in goal 5).
+LAST_CONV_LAYER = {"vgg": "block5_conv3", "resnet": "conv5_block3_out", "efficientnet": "top_conv"}
 
-    if model_name == "resnet":
-        base_model = ResNet50(weights='imagenet', include_top=False, input_shape=IMG_SIZE + (3,))
-    
-    elif model_name == "vgg":
-        base_model = VGG16(weights='imagenet', include_top=False, input_shape=IMG_SIZE + (3,))
-    
-    elif model_name == "efficientnet":
-        base_model = EfficientNetB0(weights='imagenet', include_top=False, input_shape=IMG_SIZE + (3,))
-    
-    else:
-        raise ValueError("Invalid model name")
 
-    for layer in base_model.layers:
-        layer.trainable = False
+@keras.saving.register_keras_serializable(package="tb")
+class CaffePreprocess(layers.Layer):
+    """'caffe' mode of keras.applications.{vgg16,resnet50}.preprocess_input, as a layer."""
 
-    x = GlobalAveragePooling2D()(base_model.output)
-    x = Dropout(0.5)(x)
-    output = Dense(1, activation='sigmoid')(x)
+    def call(self, x):
+        x = tf.reverse(x, axis=[-1])  # RGB -> BGR
+        return x - tf.constant(IMAGENET_BGR_MEAN, dtype=x.dtype)
 
-    model = Model(inputs=base_model.input, outputs=output)
 
+def build_model(model_name, img_size=(224, 224), learning_rate=1e-4):
+    if model_name not in BASES:
+        raise ValueError(f"Invalid model name '{model_name}', expected one of {list(BASES)}")
+
+    inputs = keras.Input(shape=tuple(img_size) + (3,), name="image_rgb_0_255")
+    x = CaffePreprocess(name="caffe_preprocess")(inputs) if model_name in NEEDS_CAFFE else inputs
+
+    # Building the base on our tensor keeps all layers in one flat graph,
+    # so Grad-CAM can find e.g. "block5_conv3" with model.get_layer().
+    base = BASES[model_name](weights="imagenet", include_top=False, input_tensor=x)
+    base.trainable = False  # frozen; BatchNorm layers also run in inference mode
+
+    x = layers.GlobalAveragePooling2D(name="gap")(base.output)
+    x = layers.Dropout(0.5, name="dropout")(x)
+    outputs = layers.Dense(1, activation="sigmoid", name="p_tb")(x)
+
+    model = keras.Model(inputs, outputs, name=f"{model_name}_tb")
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-4),
-        loss='binary_crossentropy',
-        metrics=['accuracy']
+        optimizer=keras.optimizers.Adam(learning_rate),
+        loss="binary_crossentropy",
+        metrics=["accuracy", keras.metrics.AUC(name="auc")],
     )
-
     return model

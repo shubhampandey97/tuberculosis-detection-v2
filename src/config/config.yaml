@@ -1,22 +1,24 @@
 data_path: data/Dataset of Tuberculosis Chest X-rays Images
+splits_path: data/splits.csv
+seed: 42
 
-model:
-  name: vgg
-  save_path: models/tensorflow/vgg_model.h5
-
-# model:
-#   name: resnet
-#   save_path: models/tensorflow/resnet_model.h5
-
-# model:
-#   name: efficientnet
-#   save_path: models/tensorflow/efficientnet_model.h5
+# All models are trained and evaluated; each is saved to {models_dir}/{name}_model.keras
+models: [vgg, resnet, efficientnet]
+models_dir: models/tensorflow
 
 training:
-  epochs: 10
+  epochs: 20            # upper bound; EarlyStopping usually stops earlier
+  patience: 4           # EarlyStopping on val_auc
   batch_size: 32
-  img_size: [224, 224]
+  img_size: [224, 224]  # plain resize (non-square images get stretched; measured in goal 4)
+  learning_rate: 1.0e-4
+
+augmentation:           # training split only; no horizontal flip (heart side matters)
+  rotation: 0.028       # fraction of a full turn, about +/-10 degrees
+  zoom: 0.1
 
 artifacts:
-  metrics_path: artifacts/metrics/results.json
-  plots_dir: artifacts/plots/
+  metrics_dir: artifacts/metrics
+  plots_dir: artifacts/plots
+  predictions_dir: artifacts/predictions
+  history_dir: artifacts/history

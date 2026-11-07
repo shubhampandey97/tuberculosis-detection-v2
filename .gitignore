@@ -15,8 +15,12 @@ venv/
 # =========================
 # Data
 # =========================
-data/
-!data/sample/   # keep small sample data if needed
+# Ignore everything in data/ (images), but track the split files.
+data/*
+!data/splits.csv
+!data/duplicates.csv
+# Keep small sample data if needed (comments must be on their own line)
+!data/sample/
 
 # =========================
 # Models
@@ -44,3 +48,8 @@ logs/
 # =========================
 .DS_Store
 Thumbs.db
+
+# =========================
+# Regenerable Grad-CAM heatmaps (python -m src.pipeline.gradcam_analysis)
+# =========================
+artifacts/gradcam/*.npz

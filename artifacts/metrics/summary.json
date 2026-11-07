@@ -1,0 +1,21 @@
+{
+    "selected_by": "val_auc",
+    "best_model": "resnet",
+    "models": [
+        {
+            "model": "vgg",
+            "val_auc": 0.9978011065399348,
+            "test_auc": 0.9917037140756817
+        },
+        {
+            "model": "resnet",
+            "val_auc": 0.9988650872464179,
+            "test_auc": 0.9983197395596318
+        },
+        {
+            "model": "efficientnet",
+            "val_auc": 0.9980848347283302,
+            "test_auc": 0.9964294465642174
+        }
+    ]
+}

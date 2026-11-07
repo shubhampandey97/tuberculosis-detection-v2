@@ -1,0 +1,71 @@
+{
+  "false_positive@0.5": {
+    "per_model": {
+      "vgg": 1,
+      "resnet": 1,
+      "efficientnet": 1
+    },
+    "union": 1,
+    "all_3": 1,
+    "exactly_2": 0,
+    "exactly_1": 0,
+    "all_3_files": [
+      "others (23).jpg"
+    ],
+    "all_3_nonsquare": 0
+  },
+  "false_negative@0.5": {
+    "per_model": {
+      "vgg": 41,
+      "resnet": 17,
+      "efficientnet": 39
+    },
+    "union": 62,
+    "all_3": 7,
+    "exactly_2": 21,
+    "exactly_1": 34,
+    "all_3_files": [
+      "TB.1141.jpg",
+      "TB.1892.jpg",
+      "TB.2145.jpg",
+      "TB.2324.jpg",
+      "TB.244.jpg",
+      "TB.321.jpg",
+      "TB.441.jpg"
+    ],
+    "all_3_nonsquare": 0
+  },
+  "false_positive@tuned": {
+    "per_model": {
+      "vgg": 1,
+      "resnet": 0,
+      "efficientnet": 1
+    },
+    "union": 1,
+    "all_3": 0,
+    "exactly_2": 1,
+    "exactly_1": 0,
+    "all_3_files": [],
+    "all_3_nonsquare": 0
+  },
+  "false_negative@tuned": {
+    "per_model": {
+      "vgg": 26,
+      "resnet": 24,
+      "efficientnet": 20
+    },
+    "union": 43,
+    "all_3": 6,
+    "exactly_2": 15,
+    "exactly_1": 22,
+    "all_3_files": [
+      "TB.1141.jpg",
+      "TB.1892.jpg",
+      "TB.2145.jpg",
+      "TB.2324.jpg",
+      "TB.321.jpg",
+      "TB.441.jpg"
+    ],
+    "all_3_nonsquare": 0
+  }
+}

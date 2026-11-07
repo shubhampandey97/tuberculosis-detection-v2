@@ -1,0 +1,5 @@
+group,kb,brightness,contrast,p_resnet,p_vgg,border_tb_resnet,border_tb_vgg,n
+Normal correct (both),9.842,131.979,51.414,0.027,0.003,0.443,0.525,76
+TB correct (both),7.876,137.356,53.962,0.986,0.992,0.331,0.426,334
+shared FP,8.909,142.847,48.54,0.513,0.912,0.14,0.366,1
+shared miss,10.284,134.235,45.438,0.249,0.057,0.332,0.671,7

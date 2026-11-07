@@ -1,0 +1,53 @@
+group,md5,class,path
+0,0451cb0f392b5832186f47dd94571084,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.716.jpg
+0,0451cb0f392b5832186f47dd94571084,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.722.jpg
+1,0c08041f4c8b5caf2b8d9a1a6edb6147,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.705.jpg
+1,0c08041f4c8b5caf2b8d9a1a6edb6147,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.754.jpg
+2,0c9f539e919e9965596b1d3973c5c6d9,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.703.jpg
+2,0c9f539e919e9965596b1d3973c5c6d9,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.745.jpg
+3,0ce075ba47b80030274521d34da3bcff,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.711.jpg
+3,0ce075ba47b80030274521d34da3bcff,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.717.jpg
+4,252ad2d01cffa5a1b37d6da1c4d10bf8,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.670.jpg
+4,252ad2d01cffa5a1b37d6da1c4d10bf8,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.691.jpg
+5,2545077a3622413dd8bb8c6678fbe447,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.760.jpg
+5,2545077a3622413dd8bb8c6678fbe447,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.779.jpg
+6,28e95d059d25da6467247775c8fd0cb7,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (510).jpg
+6,28e95d059d25da6467247775c8fd0cb7,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (77).jpg
+7,2b91f39a03de8ebce3e055afc6ab9aa3,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.728.jpg
+7,2b91f39a03de8ebce3e055afc6ab9aa3,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.731.jpg
+8,2e28074cd4b4344c9ca0c2b92ad8ab88,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (513).jpg
+8,2e28074cd4b4344c9ca0c2b92ad8ab88,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (80).jpg
+9,469c0676c370a23eccfa85dbfa1b22cd,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.741.jpg
+9,469c0676c370a23eccfa85dbfa1b22cd,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.752.jpg
+10,5e5dca349965812af56a7540b4cb22fa,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.719.jpg
+10,5e5dca349965812af56a7540b4cb22fa,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.739.jpg
+11,6aebd855d68ff650474f136c8a2bf2bc,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.725.jpg
+11,6aebd855d68ff650474f136c8a2bf2bc,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.743.jpg
+12,6e1c310d6d101a8d43bb0a7afc8b2c52,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.661.jpg
+12,6e1c310d6d101a8d43bb0a7afc8b2c52,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.686.jpg
+13,750c5ee798e8a3ffbc8fc790960b2435,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (512).jpg
+13,750c5ee798e8a3ffbc8fc790960b2435,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (79).jpg
+14,8205d63c53d7d99ec36a30bc4adc289b,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.709.jpg
+14,8205d63c53d7d99ec36a30bc4adc289b,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.736.jpg
+15,9843fac79792ba1c72bd46b10402ce0d,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.718.jpg
+15,9843fac79792ba1c72bd46b10402ce0d,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.740.jpg
+16,a72ab0c700e2966cd5ceec77384c1402,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (511).jpg
+16,a72ab0c700e2966cd5ceec77384c1402,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (78).jpg
+17,ababb6ebcdd1feb60eb0a2dacb3d0188,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.769.jpg
+17,ababb6ebcdd1feb60eb0a2dacb3d0188,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.790.jpg
+18,adbb1be48adb516e0af68fc2dc23927a,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (509).jpg
+18,adbb1be48adb516e0af68fc2dc23927a,Normal Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/Normal Chest X-rays/others (76).jpg
+19,b4d0d8a03e3530fa272c38b9c677434d,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.708.jpg
+19,b4d0d8a03e3530fa272c38b9c677434d,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.714.jpg
+20,beed9f1b0ce54333466d25d4b3ae0b3a,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.713.jpg
+20,beed9f1b0ce54333466d25d4b3ae0b3a,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.753.jpg
+21,c511a5d8c9b69e28a545e515e3583d5e,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.704.jpg
+21,c511a5d8c9b69e28a545e515e3583d5e,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.715.jpg
+22,cb6cf060e4599fb1128a9a1cc7dc276a,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.1000.jpg
+22,cb6cf060e4599fb1128a9a1cc7dc276a,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.2040.jpg
+23,d53b47322a507a5560cb4a6bf2362ba7,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.707.jpg
+23,d53b47322a507a5560cb4a6bf2362ba7,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.738.jpg
+24,dfae943a67f3541ae26122bd982b49e4,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.659.jpg
+24,dfae943a67f3541ae26122bd982b49e4,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.672.jpg
+25,fb51262cf8d60492c8e136a54b20110e,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.721.jpg
+25,fb51262cf8d60492c8e136a54b20110e,TB Chest X-rays,data/Dataset of Tuberculosis Chest X-rays Images/TB Chest X-rays/TB.724.jpg
