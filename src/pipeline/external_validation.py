@@ -1088,10 +1088,79 @@ def stage_ceiling():
     print(json.dumps(out, indent=1))
 
 
+# ---------------------------------------------------------------- shareable outputs (NLM data-use terms)
+PUBLIC_PRED_DIR = os.path.join(OUT_DIR, "predictions_public")
+PUBLIC_COLUMNS = ["site", "file", "label", "prob"]  # no age, sex or findings
+
+
+def stage_public():
+    """Per-image predictions without clinical readings, for the repository. Full files stay local."""
+    os.makedirs(PUBLIC_PRED_DIR, exist_ok=True)
+    for f in sorted(glob.glob(os.path.join(PRED_DIR, "*.csv"))):
+        out = os.path.join(PUBLIC_PRED_DIR, os.path.basename(f))
+        pd.read_csv(f)[PUBLIC_COLUMNS].to_csv(out, index=False)
+        print(f"[public] {out}")
+
+
+def stage_h6plot():
+    """Image-free figure: per-image lung-energy share on Montgomery vs lung area and resolution ceiling."""
+    df = pd.read_csv(os.path.join(GRADCAM_DIR, "attention_external.csv"))
+    df = df[df.site == "montgomery"]
+    ceiling = json.load(open(os.path.join(GRADCAM_DIR, "h6_resolution_ceiling.json")))
+    ceil = {"resnet": ceiling["resnet_conv5_7x7"]["median_ceiling"], "vgg": ceiling["vgg_block5_14x14"]["median_ceiling"]}
+    grid = {"resnet": "7×7", "vgg": "14×14"}
+    area = ceiling["median_lung_area"]
+    ink, muted, grid_col = "#0b0b0b", "#52514e", "#e4e3df"
+    colours = {0: "#2a78d6", 1: "#eb6834"}   # reference palette, categorical slots 1-2
+    markers = {0: "o", 1: "^"}               # secondary encoding: identity is not colour-only
+    rng = np.random.default_rng(SEED)
+
+    fig, ax = plt.subplots(figsize=(8.2, 5.2))
+    fig.patch.set_facecolor("#fcfcfb")
+    ax.set_facecolor("#fcfcfb")
+    for i, m in enumerate(CAM_MODELS):
+        for lab, dx in ((0, -0.17), (1, 0.17)):
+            v = df[(df.model == m) & (df.label == lab)]["tb_lung_energy"].dropna().values
+            x = i + dx + rng.uniform(-0.07, 0.07, len(v))
+            ax.scatter(x, v, s=30, marker=markers[lab], color=colours[lab], alpha=0.75, linewidths=0.6,
+                       edgecolors="#fcfcfb", zorder=3, label=("Normal" if lab == 0 else "TB") if i == 0 else None)
+            med = float(np.median(v))
+            ax.plot([i + dx - 0.12, i + dx + 0.12], [med, med], color=ink, lw=2, zorder=4)
+        ax.plot([i - 0.38, i + 0.38], [ceil[m], ceil[m]], color=muted, lw=1.2, ls=(0, (4, 3)), zorder=2)
+        ax.text(i + 0.40, ceil[m], f"resolution ceiling {ceil[m]:.3f}\n(perfect lung map at {grid[m]})",
+                va="center", ha="left", fontsize=8, color=muted)
+    ax.axhline(area, color=muted, lw=1.2, ls=(0, (1.5, 2)), zorder=1)
+    ax.text(1.62, area, f"lung-area share {area:.3f}\n(uniform attention)", va="center", ha="left", fontsize=8,
+            color=muted)
+    medians = {m: float(df[df.model == m]["tb_lung_energy"].median()) for m in CAM_MODELS}
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels([f"ResNet50 (conv5_block3_out)\nall-image median {medians['resnet']:.3f}",
+                        f"VGG16 (block5_conv3)\nall-image median {medians['vgg']:.3f}"], fontsize=9, color=ink)
+    ax.set_xlim(-0.55, 2.35)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Share of Grad-CAM energy inside the true lung masks", fontsize=9, color=ink)
+    ax.yaxis.grid(True, color=grid_col, lw=0.8)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    for side in ("left", "bottom"):
+        ax.spines[side].set_color(grid_col)
+    ax.tick_params(colors=muted, labelsize=8)
+    ax.legend(loc="upper left", frameon=False, fontsize=9, title="Montgomery image (black bar = median)",
+              title_fontsize=8)
+    ax.set_title("Montgomery (n = 138): models look outside the true lung fields", fontsize=11, color=ink,
+                 loc="left")
+    fig.tight_layout()
+    out = os.path.join(GRADCAM_DIR, "h6_lung_energy.png")
+    fig.savefig(out, dpi=130, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"[h6plot] {out}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", choices=["sample", "audit", "prepare", "overlap", "readings", "cropsearch",
-                                            "evaluate", "gradcam", "ceiling"], required=True)
+                                            "evaluate", "gradcam", "ceiling", "public", "h6plot"], required=True)
     parser.add_argument("--n", type=int, default=10)
     args = parser.parse_args()
     if args.stage == "sample":
@@ -1112,6 +1181,10 @@ def main():
         stage_gradcam()
     elif args.stage == "ceiling":
         stage_ceiling()
+    elif args.stage == "public":
+        stage_public()
+    elif args.stage == "h6plot":
+        stage_h6plot()
 
 
 if __name__ == "__main__":

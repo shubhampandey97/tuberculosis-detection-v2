@@ -53,3 +53,17 @@ Thumbs.db
 # Regenerable Grad-CAM heatmaps (python -m src.pipeline.gradcam_analysis)
 # =========================
 artifacts/gradcam/*.npz
+
+# =========================
+# External validation: kept local under the NLM data-use terms
+# (per-image clinical readings and figures that show NLM images)
+# =========================
+artifacts/external/inventory.csv
+artifacts/external/readings_*.csv
+artifacts/external/sample_preprocessing.csv
+artifacts/external/predictions/
+artifacts/external/preprocessing_examples.png
+artifacts/external/gradcam/gallery_*.png
+artifacts/external/gradcam/mask_alignment.png
+artifacts/external/overlap/pairs_page*.png
+artifacts/external/overlap/crop_search_top10.png
