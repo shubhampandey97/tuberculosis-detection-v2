@@ -1,0 +1,108 @@
+{
+  "jpeg_variant": {
+    "quality": 75,
+    "subsampling": 2
+  },
+  "montgomery": {
+    "n": 138,
+    "labels": {
+      "0": 80,
+      "1": 58
+    },
+    "expected": {
+      "0": 80,
+      "1": 58
+    },
+    "modes": {
+      "L": 138
+    },
+    "palette_not_gray": 0,
+    "rgb_not_gray": 0,
+    "bit_depths": {
+      "8": 138
+    },
+    "pixel_max_below_255": 3,
+    "pixel_min_above_0": 0,
+    "width": [
+      4020,
+      4892
+    ],
+    "height": [
+      4020,
+      4892
+    ],
+    "aspect_w_over_h": [
+      0.822,
+      1.217
+    ],
+    "readings_parsed": 137,
+    "readings_unparsed": 1,
+    "sex": {
+      "F": 74,
+      "M": 63,
+      "unknown": 1
+    },
+    "age_band": {
+      "40-59": 52,
+      "18-39": 51,
+      ">=60": 18,
+      "<18": 17
+    },
+    "age_range": [
+      4.0,
+      89.0
+    ]
+  },
+  "shenzhen": {
+    "n": 662,
+    "labels": {
+      "1": 336,
+      "0": 326
+    },
+    "expected": {
+      "0": 326,
+      "1": 336
+    },
+    "modes": {
+      "P": 635,
+      "RGB": 27
+    },
+    "palette_not_gray": 0,
+    "rgb_not_gray": 0,
+    "bit_depths": {
+      "8": 662
+    },
+    "pixel_max_below_255": 6,
+    "pixel_min_above_0": 5,
+    "width": [
+      1130,
+      3001
+    ],
+    "height": [
+      948,
+      3001
+    ],
+    "aspect_w_over_h": [
+      0.76,
+      1.297
+    ],
+    "readings_parsed": 654,
+    "readings_unparsed": 8,
+    "sex": {
+      "M": 445,
+      "F": 209,
+      "unknown": 8
+    },
+    "age_band": {
+      "18-39": 429,
+      "40-59": 147,
+      ">=60": 50,
+      "<18": 28,
+      "unknown": 8
+    },
+    "age_range": [
+      1.0,
+      89.0
+    ]
+  }
+}

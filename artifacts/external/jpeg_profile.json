@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "Normal": {
+      "n": 100,
+      "quality_median": 75.0,
+      "quality_min": 75,
+      "quality_max": 75,
+      "quality_counts": {
+        "75": 100
+      },
+      "max_table_error": 0,
+      "subsampling": {
+        "2": 100
+      }
+    },
+    "TB": {
+      "n": 100,
+      "quality_median": 75.0,
+      "quality_min": 75,
+      "quality_max": 90,
+      "quality_counts": {
+        "75": 95,
+        "90": 5
+      },
+      "max_table_error": 0,
+      "subsampling": {
+        "2": 100
+      }
+    }
+  },
+  "quality": 75,
+  "subsampling": 2
+}

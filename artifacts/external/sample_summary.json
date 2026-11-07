@@ -1,0 +1,71 @@
+{
+  "training_jpeg_profile": {
+    "Normal": {
+      "n": 100,
+      "quality_median": 75.0,
+      "quality_min": 75,
+      "quality_max": 75,
+      "quality_counts": {
+        "75": 100
+      },
+      "max_table_error": 0,
+      "subsampling": {
+        "2": 100
+      }
+    },
+    "TB": {
+      "n": 100,
+      "quality_median": 75.0,
+      "quality_min": 75,
+      "quality_max": 90,
+      "quality_counts": {
+        "75": 95,
+        "90": 5
+      },
+      "max_table_error": 0,
+      "subsampling": {
+        "2": 100
+      }
+    }
+  },
+  "jpeg_quality_used": 75,
+  "jpeg_subsampling_used": 2,
+  "intensity_stats": {
+    "training Normal (200)": {
+      "mean": 132.5064239501953,
+      "std": 50.19622802734375,
+      "p1": 23.617309188842775,
+      "p99": 225.0
+    },
+    "training TB (200)": {
+      "mean": 134.27195739746094,
+      "std": 59.467105865478516,
+      "p1": 8.0,
+      "p99": 240.51539611816406
+    },
+    "shenzhen PNG (10)": {
+      "mean": 162.41944885253906,
+      "std": 61.37846374511719,
+      "p1": 9.557813882827759,
+      "p99": 238.78566329956055
+    },
+    "shenzhen JPEG (10)": {
+      "mean": 161.94863891601562,
+      "std": 61.358158111572266,
+      "p1": 9.071441650390625,
+      "p99": 238.21938186645508
+    },
+    "montgomery PNG (10)": {
+      "mean": 114.64632415771484,
+      "std": 81.54405975341797,
+      "p1": 0.0,
+      "p99": 251.0
+    },
+    "montgomery JPEG (10)": {
+      "mean": 114.24072265625,
+      "std": 81.4493637084961,
+      "p1": 0.0,
+      "p99": 251.0
+    }
+  }
+}

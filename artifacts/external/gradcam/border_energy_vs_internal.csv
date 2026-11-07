@@ -1,0 +1,13 @@
+model,data,class,median_tb_border
+resnet,internal test,Normal,0.437003525
+resnet,shenzhen,Normal,0.6061190962791443
+resnet,montgomery,Normal,0.47119441628456116
+resnet,internal test,TB,0.3322121
+resnet,shenzhen,TB,0.5299767851829529
+resnet,montgomery,TB,0.422494113445282
+vgg,internal test,Normal,0.52343595
+vgg,shenzhen,Normal,0.7771917581558228
+vgg,montgomery,Normal,0.5171525478363037
+vgg,internal test,TB,0.44910562
+vgg,shenzhen,TB,0.6900727152824402
+vgg,montgomery,TB,0.44438880681991577
