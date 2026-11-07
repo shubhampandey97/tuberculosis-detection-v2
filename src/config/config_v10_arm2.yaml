@@ -1,0 +1,44 @@
+# Goal 10, Arm 2: shortcut removal + partial fine-tuning, initialised from Arm 1 (PRIMARY: ResNet50 Arm 2).
+# Select with:  $env:TB_CONFIG = "src/config/config_v10_arm2.yaml"
+tag: v10_arm2
+data_path: data/Dataset of Tuberculosis Chest X-rays Images
+splits_path: data/splits.csv
+seed: 42
+
+models: [resnet, efficientnet]
+models_dir: models/tensorflow_v10_arm2
+
+model_options:
+  crop_fraction: 0.12
+  standardize: true
+
+training:
+  epochs: 15
+  patience: 4
+  batch_size: 32
+  img_size: [224, 224]
+  learning_rate: 1.0e-5
+  finetune: true
+  init_from: models/tensorflow_v10_arm1   # Arm 1 weights (head already trained)
+  finetune_from:                           # first layer that becomes trainable (BatchNorm stays frozen)
+    resnet: conv5_block1_1_conv
+    efficientnet: block6a_expand_conv
+
+augmentation:
+  rotation: 0.028
+  zoom: 0.1
+  shortcut:
+    marker_p: 0.5
+    jpeg_p: 0.7
+    jpeg_quality: [50, 95]
+    brightness: 0.10
+    contrast: [0.7, 1.3]
+    gamma: [0.7, 1.4]
+
+artifacts:
+  metrics_dir: artifacts/v10_arm2/metrics
+  plots_dir: artifacts/v10_arm2/plots
+  predictions_dir: artifacts/v10_arm2/predictions
+  history_dir: artifacts/v10_arm2/history
+  clinical_dir: artifacts/v10_arm2/clinical
+  external_dir: artifacts/v10_arm2/external

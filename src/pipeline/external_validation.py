@@ -745,8 +745,9 @@ def stage_evaluate():
     os.makedirs(EVAL_DIR, exist_ok=True)
     config = load_config()
     inv = pd.read_csv(os.path.join(OUT_DIR, "inventory.csv"))
-    thresholds = {m: v["threshold"] for m, v in json.load(open("artifacts/clinical/thresholds.json"))["models"].items()}
-    internal = json.load(open("artifacts/clinical/metrics_test.json"))["models"]
+    thresholds = {m: v["threshold"] for m, v in
+                  json.load(open(os.path.join(CLINICAL_DIR, "thresholds.json")))["models"].items()}
+    internal = json.load(open(os.path.join(CLINICAL_DIR, "metrics_test.json")))["models"]
     preds = load_or_predict(config, inv)
 
     # Overlap exclusions: visually confirmed (main) and automatic >= 0.95 (robustness). Both empty here.
@@ -911,12 +912,28 @@ def mask_alignment_figure(inv, path):
     plt.close(fig)
 
 
+def heatmaps_in_input_frame(maps, size, crop_fraction=None):
+    """(B, h, w) Grad-CAM maps -> (B, H, W) in the 224x224 *input* frame.
+    Without an internal crop this is the plain upsample (goal 5/9 behaviour). With the goal 10 CentralCrop,
+    the maps describe the cropped field, so they are upsampled to the crop and placed in its position (zero
+    outside), which keeps them aligned with the lung masks and the border geometry."""
+    from src.components.gradcam import upsample
+    from src.components.model_builder import crop_pixels
+    if not crop_fraction:
+        return upsample(maps, size)
+    ch, cw = crop_pixels(size[0], crop_fraction), crop_pixels(size[1], crop_fraction)
+    inner = upsample(maps, (size[0] - 2 * ch, size[1] - 2 * cw))
+    out = np.zeros((len(maps),) + tuple(size), dtype=np.float32)
+    out[:, ch:size[0] - ch, cw:size[1] - cw] = inner
+    return out
+
+
 def stage_gradcam():
     from scipy.stats import wilcoxon
 
     from src.components import inference
     from src.components.data_loader import load_image
-    from src.components.gradcam import gradcam_signed, overlay, to_heatmap, upsample
+    from src.components.gradcam import gradcam_signed, overlay, to_heatmap
     from src.components.model_builder import LAST_CONV_LAYER
     from src.pipeline.gradcam_analysis import fractions, region_masks
     import tensorflow as tf
@@ -925,7 +942,8 @@ def stage_gradcam():
     config = load_config()
     size = tuple(config["training"]["img_size"])
     inv = pd.read_csv(os.path.join(OUT_DIR, "inventory.csv"))
-    thresholds = {m: v["threshold"] for m, v in json.load(open("artifacts/clinical/thresholds.json"))["models"].items()}
+    thresholds = {m: v["threshold"] for m, v in
+                  json.load(open(os.path.join(CLINICAL_DIR, "thresholds.json")))["models"].items()}
     border_masks, border_px = region_masks(size)
     centre_box = ~border_masks["border"]
     mask_alignment_figure(inv, os.path.join(GRADCAM_DIR, "mask_alignment.png"))
@@ -935,6 +953,7 @@ def stage_gradcam():
     for m in CAM_MODELS:
         model = inference.load_model(m)
         layer = LAST_CONV_LAYER[m]
+        crop = next((lyr.fraction for lyr in model.layers if lyr.name == "central_crop"), None)  # goal 10
         saved = pd.read_csv(os.path.join(PRED_DIR, f"{m}_png.csv")).set_index(["site", "file"])
         for start in range(0, len(inv), 16):
             chunk = inv.iloc[start:start + 16]
@@ -945,7 +964,8 @@ def stage_gradcam():
             pred = prob >= thresholds[m]
             tb_map, tb_empty = to_heatmap(cams[layer])
             pr_map, pr_empty = to_heatmap(cams[layer], np.where(pred, 1.0, -1.0))
-            tb224, pr224 = upsample(tb_map, size), upsample(pr_map, size)
+            tb224 = heatmaps_in_input_frame(tb_map, size, crop)
+            pr224 = heatmaps_in_input_frame(pr_map, size, crop)
             fr_tb, fr_pr = fractions(tb224, border_masks), fractions(pr224, border_masks)
             for i, (_, r) in enumerate(chunk.iterrows()):
                 row = {"model": m, "site": r.site, "file": r.file, "label": int(r.label), "prob": float(prob[i]),
@@ -960,7 +980,7 @@ def stage_gradcam():
                         row[f"{kind}_lung_energy"] = inside
                     row.update(lung_area=area, lung_area_in_centre_box=float((lm & centre_box).sum() / lm.sum()))
                 rows.append(row)
-                heat_store[(m, r.site, r.file)] = pr_map[i]
+                heat_store[(m, r.site, r.file)] = pr224[i]  # input-frame map (identical overlay without a crop)
         print(f"[gradcam] {m}: done")
     df = pd.DataFrame(rows)
     df.to_csv(os.path.join(GRADCAM_DIR, "attention_external.csv"), index=False)
@@ -997,11 +1017,13 @@ def stage_gradcam():
     # ----- border energy: external vs internal test (TB-evidence map, same layer, same 12% border)
     border_rows = []
     for m in CAM_MODELS:
-        internal = pd.read_csv(f"artifacts/gradcam/attention_{m}.csv")
+        internal_path = f"artifacts/gradcam/attention_{m}.csv"  # goal 5 (default models only)
+        internal = pd.read_csv(internal_path) if CONFIG_TAG == "default" and os.path.exists(internal_path) else None
         col = f"{LAST_CONV_LAYER[m]}__tb__border"
         for lab, name in ((0, "Normal"), (1, "TB")):
-            border_rows.append({"model": m, "data": "internal test", "class": name,
-                                "median_tb_border": float(internal.loc[internal.label == lab, col].median())})
+            if internal is not None:
+                border_rows.append({"model": m, "data": "internal test", "class": name,
+                                    "median_tb_border": float(internal.loc[internal.label == lab, col].median())})
             for site in ("shenzhen", "montgomery"):
                 g = df[(df.model == m) & (df.site == site) & (df.label == lab)]
                 border_rows.append({"model": m, "data": site, "class": name,
@@ -1054,35 +1076,53 @@ def stage_gradcam():
     print(border.pivot_table(index=["model", "class"], columns="data", values="median_tb_border").round(3).to_string())
 
 
-def resolution_ceiling(mask224, grid):
+def resolution_ceiling(mask224, grid, crop_fraction=None):
     """Lung-energy share of a 'perfect' map at Grad-CAM resolution: the mask averaged onto a grid x grid map
     (the share of lung in each cell), then upsampled exactly like the heatmaps (gradcam.upsample)."""
+    import tensorflow as tf
+
     from src.components.gradcam import upsample
+    from src.components.model_builder import crop_pixels
     h, w = mask224.shape
-    coarse = mask224.reshape(grid, h // grid, grid, w // grid).mean(axis=(1, 3)).astype(np.float32)
-    up = upsample(coarse[None], (h, w))[0]
+    field = mask224
+    if crop_fraction:  # the model sees only the cropped field, stretched back to h x w
+        c = crop_pixels(h, crop_fraction)
+        field = tf.image.resize(mask224[c:h - c, c:w - c].astype(np.uint8)[..., None] * 255, (h, w),
+                                method="nearest").numpy()[..., 0] > 127
+    coarse = field.reshape(grid, h // grid, grid, w // grid).mean(axis=(1, 3)).astype(np.float32)
+    up = heatmaps_in_input_frame(coarse[None], (h, w), crop_fraction)[0] if crop_fraction \
+        else upsample(coarse[None], (h, w))[0]
     return float((up * mask224).sum() / up.sum())
 
 
+CAM_GRID = {"resnet": 7, "vgg": 14, "efficientnet": 7}  # spatial size of LAST_CONV_LAYER at 224x224
+
+
 def stage_ceiling():
-    """Robustness check for H6 (not a new hypothesis): best achievable lung-energy share at 7x7 / 14x14."""
+    """Robustness check for H6 / S3 (not a hypothesis): best achievable lung-energy share at Grad-CAM resolution."""
     inv = pd.read_csv(os.path.join(OUT_DIR, "inventory.csv"))
-    size = tuple(load_config()["training"]["img_size"])
+    config = load_config()
+    size = tuple(config["training"]["img_size"])
+    crop = config.get("model_options", {}).get("crop_fraction")
     observed = json.load(open(os.path.join(GRADCAM_DIR, "h6.json")))["H6"]
     rows = []
     for _, r in inv[inv.site == "montgomery"].iterrows():
         m = mask_to_model_grid(load_lung_mask(r.file), size)
-        rows.append({"file": r.file, "label": r.label, "lung_area": float(m.mean()),
-                     "ceiling_7x7": resolution_ceiling(m, 7), "ceiling_14x14": resolution_ceiling(m, 14)})
+        row = {"file": r.file, "label": r.label, "lung_area": float(m.mean())}
+        for g in sorted({CAM_GRID[k] for k in CAM_MODELS}):
+            row[f"ceiling_{g}x{g}"] = resolution_ceiling(m, g, crop)
+        rows.append(row)
     df = pd.DataFrame(rows)
     df.to_csv(os.path.join(GRADCAM_DIR, "h6_resolution_ceiling.csv"), index=False)
-    out = {"method": "mask averaged onto the Grad-CAM grid, upsampled with gradcam.upsample (bilinear), "
-                     "lung-energy share computed as for the heatmaps",
-           "resnet_conv5_7x7": {"median_ceiling": float(df.ceiling_7x7.median()),
-                                "observed_median": observed["resnet"]["median_lung_energy"]},
-           "vgg_block5_14x14": {"median_ceiling": float(df.ceiling_14x14.median()),
-                                "observed_median": observed["vgg"]["median_lung_energy"]},
-           "median_lung_area": float(df.lung_area.median())}
+    out = {"method": "mask averaged onto the Grad-CAM grid (of the cropped field, if the model crops), upsampled "
+                     "like the heatmaps, lung-energy share computed as for the heatmaps",
+           "crop_fraction": crop, "median_lung_area": float(df.lung_area.median()),
+           "models": {k: {"grid": CAM_GRID[k], "median_ceiling": float(df[f"ceiling_{CAM_GRID[k]}x{CAM_GRID[k]}"].median()),
+                          "observed_median": observed[k]["median_lung_energy"]} for k in CAM_MODELS}}
+    for k, legacy in (("resnet", "resnet_conv5_7x7"), ("vgg", "vgg_block5_14x14")):  # goal 9 key names
+        if k in out["models"]:
+            out[legacy] = {"median_ceiling": out["models"][k]["median_ceiling"],
+                           "observed_median": out["models"][k]["observed_median"]}
     with open(os.path.join(GRADCAM_DIR, "h6_resolution_ceiling.json"), "w") as f:
         json.dump(out, f, indent=2)
     print(json.dumps(out, indent=1))
@@ -1107,8 +1147,12 @@ def stage_h6plot():
     df = pd.read_csv(os.path.join(GRADCAM_DIR, "attention_external.csv"))
     df = df[df.site == "montgomery"]
     ceiling = json.load(open(os.path.join(GRADCAM_DIR, "h6_resolution_ceiling.json")))
-    ceil = {"resnet": ceiling["resnet_conv5_7x7"]["median_ceiling"], "vgg": ceiling["vgg_block5_14x14"]["median_ceiling"]}
-    grid = {"resnet": "7×7", "vgg": "14×14"}
+    if "models" in ceiling:
+        ceil = {k: v["median_ceiling"] for k, v in ceiling["models"].items()}
+    else:  # goal 9 file format
+        ceil = {"resnet": ceiling["resnet_conv5_7x7"]["median_ceiling"],
+                "vgg": ceiling["vgg_block5_14x14"]["median_ceiling"]}
+    grid = {k: f"{CAM_GRID[k]}×{CAM_GRID[k]}" for k in CAM_MODELS}
     area = ceiling["median_lung_area"]
     ink, muted, grid_col = "#0b0b0b", "#52514e", "#e4e3df"
     colours = {0: "#2a78d6", 1: "#eb6834"}   # reference palette, categorical slots 1-2
@@ -1132,10 +1176,11 @@ def stage_h6plot():
     ax.axhline(area, color=muted, lw=1.2, ls=(0, (1.5, 2)), zorder=1)
     ax.text(1.62, area, f"lung-area share {area:.3f}\n(uniform attention)", va="center", ha="left", fontsize=8,
             color=muted)
+    from src.components.model_builder import LAST_CONV_LAYER
     medians = {m: float(df[df.model == m]["tb_lung_energy"].median()) for m in CAM_MODELS}
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels([f"ResNet50 (conv5_block3_out)\nall-image median {medians['resnet']:.3f}",
-                        f"VGG16 (block5_conv3)\nall-image median {medians['vgg']:.3f}"], fontsize=9, color=ink)
+    ax.set_xticks(list(range(len(CAM_MODELS))))
+    ax.set_xticklabels([f"{NAMES[m]} ({LAST_CONV_LAYER[m]})\nall-image median {medians[m]:.3f}" for m in CAM_MODELS],
+                       fontsize=9, color=ink)
     ax.set_xlim(-0.55, 2.35)
     ax.set_ylim(0, 1)
     ax.set_ylabel("Share of Grad-CAM energy inside the true lung masks", fontsize=9, color=ink)
@@ -1148,8 +1193,9 @@ def stage_h6plot():
     ax.tick_params(colors=muted, labelsize=8)
     ax.legend(loc="upper left", frameon=False, fontsize=9, title="Montgomery image (black bar = median)",
               title_fontsize=8)
-    ax.set_title("Montgomery (n = 138): models look outside the true lung fields", fontsize=11, color=ink,
-                 loc="left")
+    title = ("Montgomery (n = 138): models look outside the true lung fields" if CONFIG_TAG == "default"
+             else f"Montgomery (n = 138): Grad-CAM energy inside the true lung fields ({CONFIG_TAG})")
+    ax.set_title(title, fontsize=11, color=ink, loc="left")
     fig.tight_layout()
     out = os.path.join(GRADCAM_DIR, "h6_lung_energy.png")
     fig.savefig(out, dpi=130, facecolor=fig.get_facecolor())
@@ -1157,7 +1203,25 @@ def stage_h6plot():
     print(f"[h6plot] {out}")
 
 
+CONFIG_TAG = "default"
+CLINICAL_DIR = "artifacts/clinical"
+
+
+def configure(config):
+    """Model-dependent outputs go to the config's external_dir (default: artifacts/external, unchanged).
+    Shared inputs (inventory, prepared images, overlap, data audit) always stay in artifacts/external."""
+    global CONFIG_TAG, CLINICAL_DIR, EVAL_DIR, PRED_DIR, GRADCAM_DIR, PUBLIC_PRED_DIR, MODELS, CAM_MODELS
+    CONFIG_TAG = config.get("tag", "default")
+    out = config["artifacts"].get("external_dir", OUT_DIR)
+    CLINICAL_DIR = config["artifacts"].get("clinical_dir", "artifacts/clinical")
+    EVAL_DIR, PRED_DIR = os.path.join(out, "evaluation"), os.path.join(out, "predictions")
+    GRADCAM_DIR, PUBLIC_PRED_DIR = os.path.join(out, "gradcam"), os.path.join(out, "predictions_public")
+    MODELS = [m for m in ("resnet", "vgg", "efficientnet") if m in config["models"]]  # primary first
+    CAM_MODELS = ["resnet", "vgg"] if CONFIG_TAG == "default" else list(MODELS)
+
+
 def main():
+    configure(load_config())
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", choices=["sample", "audit", "prepare", "overlap", "readings", "cropsearch",
                                             "evaluate", "gradcam", "ceiling", "public", "h6plot"], required=True)

@@ -15,7 +15,12 @@ import os
 import time
 
 N_TRAIN, N_VAL, N_CHECK = 200, 100, 32
-SMOKE_DIR = "models/smoke"
+
+
+def smoke_dir_for(config):
+    """models/smoke for the default config (unchanged), models/smoke_<tag> for others (e.g. v10_arm1)."""
+    tag = config.get("tag", "default")
+    return "models/smoke" if tag == "default" else f"models/smoke_{tag}"
 
 
 def stratified_sample(df, n, seed):
@@ -32,7 +37,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", default=config["models"])
     parser.add_argument("--no-determinism", action="store_true")
+    parser.add_argument("--epochs", type=int, default=1,
+                        help="2+ gives a warm (no tracing overhead) epoch for the full-training estimate")
     args = parser.parse_args()
+    smoke_dir = smoke_dir_for(config)
 
     seed_mod.USE_OP_DETERMINISM = not args.no_determinism
     seed_mod.set_global_seed(config["seed"])
@@ -44,8 +52,13 @@ def main():
     from src.pipeline.train_pipeline import model_path, train_model
 
     cfg = copy.deepcopy(config)
-    cfg["models_dir"] = SMOKE_DIR
-    cfg["artifacts"]["history_dir"] = os.path.join(SMOKE_DIR, "history")
+    cfg["models_dir"] = smoke_dir
+    cfg["artifacts"]["history_dir"] = os.path.join(smoke_dir, "history")
+    if cfg["training"].get("finetune"):  # Arm 2 smoke starts from the Arm 1 *smoke* model
+        cfg["training"]["init_from"] = "models/smoke_" + os.path.basename(
+            cfg["training"]["init_from"]).replace("tensorflow_", "")
+    n_train_full = len(read_split(cfg, "train"))
+    n_val_full = len(read_split(cfg, "val"))
 
     train_df = stratified_sample(read_split(cfg, "train"), N_TRAIN, cfg["seed"])
     val_df = stratified_sample(read_split(cfg, "val"), N_VAL, cfg["seed"])
@@ -66,16 +79,25 @@ def main():
                 CaffePreprocess()(check_x).numpy() - app.preprocess_input(check_x.copy())).max())
 
         t0 = time.time()
-        model, hist = train_model(name, cfg, train_df=train_df, val_df=val_df, epochs=1)
-        r["fit_1_epoch_s"] = round(time.time() - t0, 1)
-        r["val_auc_after_1_epoch"] = round(hist["val_auc"][0], 4)
+        model, hist = train_model(name, cfg, train_df=train_df, val_df=val_df, epochs=args.epochs)
+        r["fit_total_s"] = round(time.time() - t0, 1)
+        r["epoch_seconds"] = hist["epoch_seconds"]
+        r["val_auc_last_epoch"] = round(hist["val_auc"][-1], 4)
+        r["trainable_params"] = hist["trainable_params"]
 
-        # Warm inference throughput over the smoke training images (frozen base => ~cost per epoch).
+        # Warm inference throughput over the smoke training images (forward pass only).
         train_eval = make_dataset(cfg, df=train_df)
         model.predict(train_eval.take(1), verbose=0)
         t0 = time.time()
         model.predict(train_eval, verbose=0)
-        r["s_per_image"] = round((time.time() - t0) / len(train_df), 4)
+        fwd = (time.time() - t0) / len(train_df)
+        r["s_per_image"] = round(fwd, 4)
+        # Full-epoch estimate from the last (warm) epoch: training part scaled to the full train split,
+        # validation part (forward only) scaled to the full val split.
+        last = hist["epoch_seconds"][-1]
+        train_per_img = max(last - fwd * len(val_df), 0) / len(train_df)
+        r["est_full_epoch_min"] = round((train_per_img * n_train_full + fwd * n_val_full) / 60, 2)
+        r["estimate_from_warm_epoch"] = len(hist["epoch_seconds"]) > 1
 
         probs = model.predict(check_x, verbose=0).ravel()
         r["pred_min"], r["pred_max"] = float(probs.min()), float(probs.max())
@@ -88,7 +110,7 @@ def main():
         print(json.dumps(r, indent=2))
 
     tag = "nodet" if args.no_determinism else "det"
-    with open(os.path.join(SMOKE_DIR, f"smoke_report_{tag}.json"), "w") as f:
+    with open(os.path.join(smoke_dir, f"smoke_report_{tag}.json"), "w") as f:
         json.dump(report, f, indent=2)
     failed = [n for n, r in report.items() if not (r["pred_in_0_1"] and r["reload_same"]
               and r.get("preprocess_max_diff", 0) < 1e-3)]
