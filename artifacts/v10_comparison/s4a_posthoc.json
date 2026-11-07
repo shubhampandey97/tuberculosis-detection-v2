@@ -1,0 +1,129 @@
+{
+  "label": "POST HOC (not pre-registered)",
+  "n": 2982,
+  "tree_text": "|--- kurtosis <= -1.21\n|   |--- kurtosis <= -1.29\n|   |   |--- kurtosis <= -1.33\n|   |   |   |--- class: 1\n|   |   |--- kurtosis >  -1.33\n|   |   |   |--- class: 1\n|   |--- kurtosis >  -1.29\n|   |   |--- kurtosis <= -1.29\n|   |   |   |--- class: 0\n|   |   |--- kurtosis >  -1.29\n|   |   |   |--- class: 1\n|--- kurtosis >  -1.21\n|   |--- p95 <= 195.18\n|   |   |--- p95 <= 191.84\n|   |   |   |--- class: 1\n|   |   |--- p95 >  191.84\n|   |   |   |--- class: 1\n|   |--- p95 >  195.18\n|   |   |--- skew <= 0.30\n|   |   |   |--- class: 1\n|   |   |--- skew >  0.30\n|   |   |   |--- class: 1\n",
+  "tree_splits": [
+    {
+      "node": 0,
+      "feature": "kurtosis",
+      "threshold": -1.212717354297638,
+      "n": 2982,
+      "n_normal": 509
+    },
+    {
+      "node": 1,
+      "feature": "kurtosis",
+      "threshold": -1.2858884930610657,
+      "n": 1067,
+      "n_normal": 20
+    },
+    {
+      "node": 2,
+      "feature": "kurtosis",
+      "threshold": -1.331347405910492,
+      "n": 776,
+      "n_normal": 3
+    },
+    {
+      "node": 5,
+      "feature": "kurtosis",
+      "threshold": -1.285643458366394,
+      "n": 291,
+      "n_normal": 17
+    },
+    {
+      "node": 8,
+      "feature": "p95",
+      "threshold": 195.18234252929688,
+      "n": 1915,
+      "n_normal": 489
+    },
+    {
+      "node": 9,
+      "feature": "p95",
+      "threshold": 191.83665466308594,
+      "n": 581,
+      "n_normal": 29
+    },
+    {
+      "node": 12,
+      "feature": "skew",
+      "threshold": 0.3045050799846649,
+      "n": 1334,
+      "n_normal": 460
+    }
+  ],
+  "features": [
+    {
+      "feature": "width",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": -0.0994138092461175,
+      "median_normal": 256.0,
+      "median_tb": 256.0
+    },
+    {
+      "feature": "height",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": -0.727108836489188,
+      "median_normal": 256.0,
+      "median_tb": 256.0
+    },
+    {
+      "feature": "aspect",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": 0.681272806329939,
+      "median_normal": 1.0,
+      "median_tb": 1.0
+    },
+    {
+      "feature": "dark_frac",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": 1.3129902537724492,
+      "median_normal": 0.0,
+      "median_tb": 0.0
+    },
+    {
+      "feature": "bright_frac",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": 1.780645655657814,
+      "median_normal": 0.0,
+      "median_tb": 0.0
+    },
+    {
+      "feature": "p5",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": 3.6054769470444263,
+      "median_normal": 49.718549728393555,
+      "median_tb": 51.84352207183838
+    },
+    {
+      "feature": "p50",
+      "tree_importance": 0.0,
+      "lr_coef_standardised": -0.6238675463493305,
+      "median_normal": 127.9516830444336,
+      "median_tb": 128.65595245361328
+    },
+    {
+      "feature": "p95",
+      "tree_importance": 0.32328543919279523,
+      "lr_coef_standardised": -2.3385523469493976,
+      "median_normal": 205.14253997802734,
+      "median_tb": 199.95973587036133
+    },
+    {
+      "feature": "skew",
+      "tree_importance": 0.33004678232171286,
+      "lr_coef_standardised": -1.596750705022544,
+      "median_normal": -0.020764249326538534,
+      "median_tb": -0.058467958769365155
+    },
+    {
+      "feature": "kurtosis",
+      "tree_importance": 0.34666777848549196,
+      "lr_coef_standardised": 0.7419138534780982,
+      "median_normal": -1.0390000911768922,
+      "median_tb": -1.1533191703114796
+    }
+  ],
+  "note": "fitted on all images (no CV) to describe the signal; CV AUCs are in s4a.json"
+}

@@ -1,0 +1,9 @@
+model,data,class,median_tb_border
+resnet,shenzhen,Normal,0.0
+resnet,montgomery,Normal,0.0
+resnet,shenzhen,TB,0.0
+resnet,montgomery,TB,0.0
+efficientnet,shenzhen,Normal,0.0
+efficientnet,montgomery,Normal,0.0
+efficientnet,shenzhen,TB,0.0
+efficientnet,montgomery,TB,0.0

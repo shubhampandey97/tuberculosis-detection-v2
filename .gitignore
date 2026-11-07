@@ -67,3 +67,8 @@ artifacts/external/gradcam/gallery_*.png
 artifacts/external/gradcam/mask_alignment.png
 artifacts/external/overlap/pairs_page*.png
 artifacts/external/overlap/crop_search_top10.png
+# Goal 10 arms: same NLM rules (full per-image predictions with sex/age, readings, figures showing NLM images)
+artifacts/v10_arm*/external/predictions/
+artifacts/v10_arm*/external/readings_*.csv
+artifacts/v10_arm*/external/gradcam/gallery_*.png
+artifacts/v10_arm*/external/gradcam/mask_alignment.png

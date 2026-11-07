@@ -1,0 +1,16 @@
+{
+    "selected_by": "val_auc",
+    "best_model": "efficientnet",
+    "models": [
+        {
+            "model": "resnet",
+            "val_auc": 0.9942545041849908,
+            "test_auc": 0.9936290124969369
+        },
+        {
+            "model": "efficientnet",
+            "val_auc": 0.9964179316215065,
+            "test_auc": 0.9907235621521338
+        }
+    ]
+}
