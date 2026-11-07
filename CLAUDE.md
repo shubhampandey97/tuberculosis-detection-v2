@@ -10,10 +10,10 @@ Refer to them by section number.
 - Run modules from the repo root, e.g. ...\python.exe -m src.pipeline.train_pipeline
 - requirements.txt = 12 direct deps pinned (Linux-safe). requirements-lock.txt = exact Windows env.
   Never upgrade protobuf above 4.x. OpenCV and tqdm were removed (nothing uses them).
-- Git: work on branch upgrade-v4. main has goals 1–7 merged (PRs #10, #11); goal 9 is on upgrade-v4.
+- Git: work on branch upgrade-v4. main has goals 1–7 and 9 merged (PRs #10–#12); goal 10 is on upgrade-v4.
 - Local pytest: set PYTHONNOUSERSITE=1 (a user-site platformdirs breaks pytest). Lint: ruff check .
 
-# Current state (goals 1–7 and 9 DONE; do not redo)
+# Current state (goals 1–7, 9 and 10 DONE; do not redo)
 - Data: 2,982 images after removing 26 exact duplicates (509 Normal / 2,473 TB).
   data/splits.csv = stratified seeded 70/15/15 (train 2,087 / val 447 / test 448; test = 77 Normal, 371 TB).
   Labels 0 = Normal, 1 = TB. 124 TB images are non-square. No patient IDs.
@@ -36,6 +36,15 @@ Refer to them by section number.
   stated reason only partly. Montgomery Grad-CAM energy inside true lung masks 0.186 (ResNet) / 0.169 (VGG)
   < lung-area share 0.257 (resolution ceiling 0.682 / 0.825). Shenzhen metadata AUC 0.855 (flagged).
   NLM terms: don't redistribute the NLM data; external data lives in data/external/ (not committed).
+- GOAL 10 SHORTCUT REMOVAL: DONE, NEGATIVE (docs/audit.md goal 10; pre-registered; configs
+  src/config/config_v10_arm{1,2}.yaml selected via TB_CONFIG; models/tensorflow_v10_arm{1,2}/; outputs
+  artifacts/v10_arm{1,2}/, criteria in artifacts/v10_comparison/ via src/pipeline/goal10_compare.py).
+  In-model 12% central crop + per-image standardisation (mean 128, SD 50) + label-independent marker/JPEG/
+  intensity augmentation; ResNet50 + EffNetB0; Arm 1 frozen, Arm 2 fine-tunes last block. Primary ResNet50
+  Arm 2: external AUC 0.502 / 0.572 (FELL; S1 not supported), S4a processed-input shortcut AUC 0.883,
+  S4b not supported. S2 (0.659) and S3 pass by the rules only (sigmoid saturation; crop geometry,
+  uniform-in-crop lung share 0.413). EffNet S1 supported but only to 0.60-0.68. Internal AUC 0.999.
+  Lessons: val is confounded (early stopping/thresholds); rank on logits, not saturated probabilities.
 
 # Working rules
 - Show a plan first and wait for approval before editing.
@@ -46,10 +55,9 @@ Refer to them by section number.
 - Any new inference path must pass a parity test against artifacts/predictions/ (two past bugs were
   train/inference mismatches).
 
-# Remaining goals (order: 10 → 8)
-10. SHORTCUT REMOVAL: retrain on lung crops or lung segmentations (markers, labels, borders removed);
-   re-run the lungs-hidden test and evaluate with the SAME goal-9 external pipeline and pre-registration
-   approach. Success = external AUC rises and lungs-hidden AUC drops.
+# Remaining goals (order: 8, then optional 10b)
 8. MLOPS + SERVING: FastAPI /predict reusing inference.py; working Dockerfile (CPU, .dockerignore,
    serving command, no CUDA base); MODEL_CARD.md including external-validation results;
    optional MLflow tracking and DVC for data.
+10b (optional). MIXED-SOURCE TRAINING: Kaggle + Shenzhen so each source has both classes; source-stratified
+   val/test; thresholds on logits; Montgomery as external test. Needs its own pre-registration first.

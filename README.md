@@ -1,6 +1,6 @@
 # Tuberculosis detection from chest X-rays: a case study in dataset confounding
 
-> **TL;DR:** 0.998 internal AUC did not transfer: 0.669 / 0.656 (ResNet50) on two external hospital datasets (Shenzhen, Montgomery; 800 images, pre-registered hypotheses); VGG16 and EfficientNet at chance. The models largely learned dataset-source shortcuts; ResNet50 keeps some real signal. See [External validation](#external-validation) and [Key finding](#key-finding-dataset-confounding).
+> **TL;DR:** 0.998 internal AUC did not transfer: 0.669 / 0.656 (ResNet50) on two external hospital datasets (Shenzhen, Montgomery; 800 images, pre-registered hypotheses); VGG16 and EfficientNet at chance. The models largely learned dataset-source shortcuts; ResNet50 keeps some real signal. A pre-registered shortcut-removal retrain (crop, standardisation, anti-shortcut augmentation) did not fix it: primary external AUC fell to 0.50 / 0.57, and simple intensity-histogram features still predict the label (AUC 0.88). See [External validation](#external-validation), [Key finding](#key-finding-dataset-confounding) and [Goal 10](#goal-10-shortcut-removal-retrain-negative-result).
 
 [![CI](https://github.com/shubhampandey97/tuberculosis-detection-v2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shubhampandey97/tuberculosis-detection-v2/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
@@ -118,6 +118,40 @@ At the val-tuned thresholds, with 95% bootstrap CIs (2,000 resamples), truncated
 
 External example images (Grad-CAM galleries, overlap pairs) are kept local because of the NLM data-use terms.
 
+## Goal 10: shortcut-removal retrain (negative result)
+
+Can the shortcut be trained away without new data?
+- **Pre-registration:** the criteria, thresholds and primary model were fixed in [docs/audit.md](docs/audit.md) and pushed before any training.
+- **Models:** ResNet50 and EfficientNetB0, retrained on Kaggle only.
+- **Inside the model:** a central crop (12% per edge, removing borders and most corner markers) and per-image intensity standardisation.
+- **Training augmentation:** label-independent synthetic markers and text, JPEG re-encoding, and brightness, contrast and gamma changes.
+- **Arms:** Arm 1 trains the head only. Arm 2 also fine-tunes the last backbone block.
+- **Primary model:** ResNet50 Arm 2, fixed in advance.
+- **Evaluation:** the same external pipeline, images and statistics as above.
+
+| | **ResNet50 Arm 2 (primary)** | ResNet50 Arm 1 | EfficientNetB0 Arm 1 | EfficientNetB0 Arm 2 |
+|---|---|---|---|---|
+| Internal test AUC | 0.999 | 0.993 | 0.990 | 0.999 |
+| Shenzhen AUC (before → after) | 0.669 → **0.502** | 0.669 → 0.445 | 0.521 → 0.653 | 0.521 → 0.605 |
+| Montgomery AUC (before → after) | 0.656 → **0.572** | 0.656 → 0.673 | 0.537 → 0.642 | 0.537 → 0.684 |
+| **S1** external AUC rises on both sites (paired 95% CI of ΔAUC > 0) | **not supported** | not supported | supported | supported |
+| **S2** lungs-hidden internal AUC ≤ 0.75 | supported\* (0.659) | not supported (0.938) | not supported (0.965) | not supported (0.975) |
+| **S3** Grad-CAM energy in true lung masks above lung-area share (Montgomery) | supported\*\* | not supported | supported\*\* | supported\*\* |
+| **S4a** shortcut test on processed inputs ≤ 0.75 | **not supported** (0.883) | same inputs | same inputs | same inputs |
+| **S4b** within-site class gap > between-site shift | **not supported** | not supported | not supported | not supported |
+| External specificity at the val-tuned threshold (Shenzhen / Montgomery) | 0.625 / 0.062 | 0.592 / 0.012 | 0.880 / 0.025 | 0.926 / 0.162 |
+
+\* By the rule only: the primary model's scores saturate at 1.0, and with the centre hidden it scores about 1.0 for every image, so this AUC comes from tiny score differences.<br>
+\*\* By the rule only: the crop puts all attention inside the central field, where lung covers 0.413 of the area. Every model is below that baseline (post hoc).
+
+**Verdict:** the primary model failed the primary endpoint (S1), S4a and S4b.
+- **Why:** after standardisation, the histogram shape (kurtosis, skewness, 95th percentile) still separates the classes. Because source and label coincide, this can't distinguish source from pathology (post hoc). The external results show the learned signal is mostly not TB.
+- **Val set:** it comes from the same sources, which is why early stopping and the thresholds couldn't detect this.
+- **EfficientNetB0:** it improved, but only from chance to 0.60–0.68.
+- **Conclusion:** preprocessing can't remove a shortcut when source and label coincide (as in DeGrave, Janizek & Lee, *Nature Machine Intelligence*, 2021). A mixed-source training design is needed.
+
+Full results, flags and limitations: [docs/audit.md](docs/audit.md) (goal 10).
+
 ## Limitations
 
 - **Two sources, one per class.** The internal test set shares that confounding, so it can't measure TB detection by itself. External validation shows the internal scores do not transfer (see above).
@@ -131,7 +165,7 @@ External example images (Grad-CAM galleries, overlap pairs) are kept local becau
 
 ## Next steps
 
-1. **Shortcut-removal retrain:** train on lung crops or lung segmentations, so markers, labels and borders are gone, and evaluate with **this same external pipeline** (same Shenzhen/Montgomery data, metrics and pre-registration). Success means external AUC rises and the lungs-hidden AUC drops.
+1. **Mixed-source training (goal 10b):** train on Kaggle + Shenzhen, so each source contributes both classes. Use source-stratified val and test splits, rank and tune thresholds on logits, and evaluate on Montgomery with a new pre-registration. Goal 10 showed that preprocessing alone does not remove the shortcut.
 2. **Calibration and threshold:** recalibrate the scores, and choose the screening threshold with a safety margin. The current one missed 95% sensitivity on the internal test and gives near-zero specificity externally.
 3. **Engineering:** a FastAPI endpoint, a working Docker image and a model card that includes the external results.
 4. **Clinical review** of the 7 shared internal misses (especially TB.1892) and of the external errors.
@@ -205,6 +239,7 @@ The app flags an upload as "TB suspected" when the score is at or above the val-
 ```text
 app/streamlit_app.py           Streamlit demo (ResNet50, tuned threshold, Grad-CAM, disclaimer)
 src/config/config.yaml         paths, seed, models, training and augmentation settings
+src/config/config_v10_arm{1,2}.yaml  goal 10 shortcut-removal configs (select with TB_CONFIG)
 src/components/
   data_loader.py               tf.data pipeline from data/splits.csv (raw 0-255 RGB)
   model_builder.py             frozen ImageNet bases + head; preprocessing inside the model
@@ -220,6 +255,8 @@ src/pipeline/
   gradcam_analysis.py          attention statistics and galleries
   gradcam_pipeline.py          Grad-CAM for one image from the command line
   external_validation.py       external validation on Shenzhen / Montgomery (staged)
+  goal10_compare.py            goal 10 criteria S1-S4 (+ post hoc S4a diagnostic)
+  goal10_inputs_figure.py      goal 10 visual check of crop, standardisation and augmentation
 src/utils/                     config loader, global seeds
 data/splits.csv                the split (images are not in the repo)
 artifacts/                     metrics, predictions, clinical/, gradcam/, external/, legacy/ (invalid old results)

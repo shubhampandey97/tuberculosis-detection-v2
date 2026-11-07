@@ -515,7 +515,7 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
 - **`.gitattributes`:** `* text=auto eol=lf`, plus binary rules. `git add --renormalize .` changed nothing, because every tracked text file was already stored as LF (`core.autocrlf=true`); only the Windows working copies were CRLF.
 - **README:** CI badge, a "Tests and lint" step, and `tests/` and CI in the repo map.
 
-### Goal 9 — EXTERNAL VALIDATION: in progress (branch `upgrade-v4`)
+### Goal 9 — EXTERNAL VALIDATION: done (2026-11-07; merged in PR #12)
 
 #### Pre-registered expectations (written 2026-11-07 14:01, before any external predictions existed)
 At the time of writing, `artifacts/external/` held only the 10-image preprocessing check (examples, histograms, `sample_*.csv/json`). No external images had been passed through any model. The models, the val-tuned thresholds (ResNet50 0.6142, VGG16 0.2357, EfficientNetB0 0.3257) and the preprocessing were fixed in advance and won't change after seeing external results.
@@ -681,7 +681,7 @@ Same `data_audit.py` functions, unchanged; labels come from the `_0`/`_1` file s
   - the 6 figures that show NLM images (galleries, mask alignment, overlap pairs, crop-search top 10, preprocessing examples).
   - A dry-run staging check confirmed that none of these would be committed, and that no committed CSV has a sex, age or findings column.
 
-### Goal 10 — SHORTCUT REMOVAL: in progress (branch `upgrade-v4`)
+### Goal 10 — SHORTCUT REMOVAL: done (2026-11-07, branch `upgrade-v4`). **Negative result:** the primary model failed S1, S4a and S4b.
 
 #### Pre-registration (written 2026-11-07 15:40, before any goal 10 code, training or results)
 At the time of writing, no goal 10 model, prediction or figure existed. The only models were the goal 3 models in `models/tensorflow/` and the old smoke-test folder.
@@ -720,4 +720,112 @@ At the time of writing, no goal 10 model, prediction or figure existed. The only
 - **Secondary result (not a criterion):** external specificity at the new val-tuned thresholds.
 - **Reporting:** each criterion is reported on its own for all 4 model–arm combinations, with the primary model's verdict decisive. Any analysis added after seeing results is labelled post hoc.
 
-### Goals 8, 10b: not started
+*(The pre-registration above is unchanged. Everything below was written after the results.)*
+
+#### Training (run by the owner in PowerShell; logs in `logs/train_v10_arm{1,2}.log`)
+| | epochs run | best epoch | best val AUC | median s / epoch | trainable params |
+|---|---|---|---|---|---|
+| ResNet50 Arm 1 | 20 (cap) | 20 | 0.9944 | 169.7 | 2,049 |
+| EfficientNetB0 Arm 1 | 20 (cap) | 20 | 0.9964 | 85.8 | 1,281 |
+| ResNet50 Arm 2 | 13 (early stop) | 9 | 1.0000 | 184.6 | 14,955,521 |
+| EfficientNetB0 Arm 2 | 9 (early stop) | 5 | 1.0000 | 150.4 | 3,131,165 |
+
+- **Logs:** each has one warning, the harmless `tf.placeholder` deprecation notice. No errors.
+- **Reload:** all 4 models reload with the crop and standardisation layers present, and their trainable counts match the smoke tests.
+- **Parity (CLAUDE.md rule):** the app path (`inference.preprocess_bytes` → `predict`) reproduces each model's saved test predictions on 32 images (16 Normal, 16 TB), max difference 6.3e-07. The external pipeline's own parity check passes too (max difference 5e-09). pytest: 87 passed, including the goal 9 regression test.
+
+#### Results (truncated to 3 decimals; 95% CIs from a stratified bootstrap with 2,000 resamples, seed 42; external = lossless PNG)
+| | **ResNet50 Arm 2 (primary)** | ResNet50 Arm 1 | EfficientNetB0 Arm 1 | EfficientNetB0 Arm 2 |
+|---|---|---|---|---|
+| Val-tuned threshold (pre-registered rule) | 0.9999972 (see flag 1) | 0.2437 | 0.1788 | 0.2267 |
+| Internal test AUC (not a criterion) | 0.999 | 0.993 | 0.990 | 0.999 |
+| **S1** Shenzhen AUC, goal 9 → goal 10; ΔAUC (95% CI) | 0.669 → 0.502; −0.167 (−0.207 to −0.125) | 0.669 → 0.445; −0.224 (−0.268 to −0.179) | 0.521 → 0.653; +0.131 (+0.089 to +0.175) | 0.521 → 0.605; +0.084 (+0.039 to +0.129) |
+| **S1** Montgomery AUC, goal 9 → goal 10; ΔAUC (95% CI) | 0.656 → 0.572; −0.084 (−0.181 to +0.011) | 0.656 → 0.673; +0.017 (−0.091 to +0.118) | 0.537 → 0.642; +0.105 (+0.014 to +0.193) | 0.537 → 0.684; +0.146 (+0.049 to +0.239) |
+| **S1** verdict (secondary: AUC ≥ 0.80 on both sites) | **not supported** (no) | not supported (no) | supported (no) | supported (no) |
+| **S2** internal AUC with the centre of the cropped field hidden (≤ 0.75 needed) | **0.659 (0.600–0.715): supported** (flag 1) | 0.938: not supported | 0.965: not supported | 0.975: not supported |
+| S2, goal 4 version (trivially affected by the crop) | 0.520 | 0.488 | 0.434 | 0.432 |
+| **S3** Montgomery median (lung energy − lung area) (> 0 needed) | **+0.124 (93% of images > 0): supported** (flag 2) | −0.010: not supported | +0.004: supported | +0.025: supported |
+| S3 median lung energy; lung-area share 0.257; resolution ceiling 0.787 | 0.368 | 0.239 | 0.245 | 0.269 |
+| S3 paired Wilcoxon vs goal 9 ResNet50 (median paired difference; p) | +0.198; p = 2.1e-24 | +0.064; p = 4.4e-08 | +0.063; p = 5.9e-07 (flag 3) | +0.096; p = 9.3e-11 (flag 3) |
+| S3 empty TB-evidence maps (of 138) | 0 | 0 | 8 | 4 |
+| **S4a** processed-input shortcut test, all-feature AUC (≤ 0.75 needed) | **0.883: not supported** | the same inputs (identical layers, max difference 0.0) | the same | the same |
+| **S4b** g Shenzhen / Montgomery vs d (min g > d needed) | **0.016 / −0.000 vs 0.094: not supported** | −0.015 / 0.079 vs 0.483: not supported | 0.061 / 0.099 vs 0.467: not supported | 0.079 / 0.155 vs 0.501: not supported |
+| Secondary: external specificity (Shenzhen / Montgomery) | 0.625 / 0.062 | 0.592 / 0.012 | 0.880 / 0.025 | 0.926 / 0.162 |
+| (external sensitivity at the same threshold) | 0.342 / 0.948 | 0.345 / 0.982 | 0.306 / 0.913 | 0.208 / 0.862 |
+
+- **S4a details:** logistic regression 0.883, depth-3 tree 0.834. The rule uses the higher of the two, as the raw audit headline 0.918 did; both exceed 0.75. Width + height + aspect alone give 0.525, so the signal is in the intensity features.
+- **Goal 9 reference values** recomputed from the saved files: g = 0.096 / 0.005, d = 0.2264 (ResNet50). The pre-registration printed d as 0.227, which rounds up; truncated, it is 0.226. The verdict is the same either way.
+- **Sources:**
+  - `artifacts/v10_comparison/criteria.json`, `s4a.json` and `s4a_shortcut_test.csv` (code: `src/pipeline/goal10_compare.py`);
+  - `artifacts/v10_arm{1,2}/clinical/` (thresholds, metrics, masking);
+  - `artifacts/v10_arm{1,2}/external/` (share-safe parts only; see "Sharing" below).
+
+#### Verdicts by the pre-registered rules (primary model: ResNet50 Arm 2)
+| criterion | verdict | comment |
+|---|---|---|
+| **S1** (primary endpoint) | **Not supported** | External AUC **fell** on both sites. On Shenzhen the CI is entirely below 0; Shenzhen AUC is now at chance (0.502). |
+| **S2** | Supported by the rule, but **does not show the shortcut was removed** | Flag 1: the scores are saturated. |
+| **S3** | Supported by the rule, but **does not show lung-focused attention** | Flag 2: below a uniform map over the cropped field. |
+| **S4a** | **Not supported** | 0.883 on the processed inputs (raw audit 0.918). |
+| **S4b** | **Not supported** | The Montgomery within-site gap is −0.000: no class separation there. |
+
+- **Secondary models:**
+  - EfficientNetB0 passes S1 in both arms, but from goal 9's chance level (0.521 / 0.537) to 0.60–0.68, below the 0.80 secondary bar.
+  - EfficientNetB0 fails S2, S4a and S4b, and passes S3 only by small margins.
+  - ResNet50 Arm 1 fails everything.
+- **Internal test AUC rose** (0.999) instead of dropping, which is consistent with the shortcut still being learned.
+
+#### Flags (found while evaluating; reported, not fixed)
+1. **Sigmoid saturation behind the S2 pass and the threshold.**
+   - ResNet50 Arm 2 gives exactly 1.0 (float32) to 329 of 371 val TB images and 312 of 371 test TB images.
+   - The val classes separate completely (Normal max 0.333, TB min 0.641). The pre-registered rule (highest threshold with val sensitivity ≥ 0.95) therefore picks 0.9999972, inside the saturated band.
+   - With the centre of the cropped field hidden, mean P(TB) is 1.0 for both Normal and TB. The S2 AUC of 0.659 comes from tiny differences between near-1 scores, not from a loss of the shortcut.
+   - The same saturation explains the Montgomery result: every image scores about 0.999, so the Brier score is 0.579 with a zero-width CI (the Normal share, 80/138).
+2. **S3 is mostly crop geometry (post hoc check).**
+   - The crop puts all Grad-CAM energy inside the central 170×170 field, where lung covers a median share of **0.413**, not the whole-image 0.257.
+   - Against this uniform-in-crop baseline, every model is below: median −0.041 for the primary (26% of images above), −0.173 / −0.143 / −0.130 for the others.
+3. **The S3 Wilcoxon for EfficientNetB0 compares across architectures.** Goal 9 ran no EfficientNetB0 Grad-CAM, so the only goal 9 reference is ResNet50.
+4. **Border 12% masked = unmasked, exactly, for all 4 models.** This is expected: the internal crop removes that same border.
+
+#### Post hoc: which processed-input statistics carry the signal (S4a features; not a criterion)
+- **Method:** the S4a depth-3 tree and logistic regression, refit on all 2,982 images without CV, to describe the signal (`goal10_compare --stage s4a_posthoc`, output `artifacts/v10_comparison/s4a_posthoc.json`).
+- **Tree splits:** the tree uses only **kurtosis, p95 and skewness**.
+  - Root: kurtosis ≤ −1.21 sends 1,067 images, of which only 20 are Normal (98% TB).
+  - The remaining 1,915 images (489 Normal) split on p95 ≤ 195.2 (581 images, 29 Normal), then skewness.
+  - Width, height, aspect, the percentiles p5 / p50 and the dark / bright shares are unused. Impurity importances: kurtosis 0.346, skewness 0.330, p95 0.323.
+- **Class medians:**
+  - kurtosis −1.039 (Normal) vs −1.153 (TB);
+  - p95 205.1 vs 199.9;
+  - skewness −0.020 vs −0.058.
+- **Standardised LR coefficients:** p5 +3.61, p95 −2.34, bright share +1.78, skewness −1.60, dark share +1.31, kurtosis +0.74 (the rest |coef| < 0.73). The features are strongly collinear, so individual coefficients are not interpretable.
+- **Reading:** after standardisation, the histogram **shape** (flatter, less bright tail in TB images) still separates the classes. This analysis cannot say how much of that is pathology and how much is source (scanner and post-processing). Given goal 9, the source is the likely main part.
+
+#### Code changes made while evaluating (paths and labels only; no criterion, threshold rule or statistic changed)
+- `external_validation.load_or_predict`: the parity check read the goal 4 predictions from a hard-coded `artifacts/predictions/`. It now reads the active config's `predictions_dir` (the same model's `evaluate.py` output). With the old path, the check would have compared goal 10 models against goal 3 predictions and failed.
+- `evaluate_clinical`: the shared-errors table header was hard-coded for 3 models. It now lists the config's models. With 2 models, its "all 3" columns are 0 by construction.
+- New: `src/pipeline/goal10_compare.py` (S4a, the post hoc S4a diagnostic, and the S1–S4b comparison).
+
+#### Limitations
+- **Early stopping, checkpoint selection and thresholds all use a confounded val set.** Val comes from the same two Kaggle sources as train, so it rewards the shortcut as much as TB signal.
+  - Arm 2 reached val AUC 1.0000 within 4–8 epochs. The kept epoch was then a choice between ties, not evidence of generalisation.
+  - The val-tuned thresholds inherit the same confounding; external specificity at those thresholds is 0.012–0.162 on Montgomery.
+- **Arm 1 was stopped by the 20-epoch cap**, not by early stopping (val AUC still rising, 0.9940 → 0.9944 at epoch 20). A longer Arm 1 would also have changed Arm 2's starting point.
+- **Sigmoid saturation:** float32 probabilities of exactly 1.0 create ties that distort AUCs, bootstrap CIs and threshold tuning. In future, rank and tune on **logits** (pre-sigmoid scores) rather than probabilities.
+- One seed and one training run per arm; no estimate of run-to-run variation.
+
+#### Conclusion
+- Removing borders and markers, standardising intensities and adding label-independent anti-shortcut augmentation **did not remove the shortcut**.
+- When image source and label coincide (Normal and TB from different collections), a model can still learn the source from what is left: histogram shape, texture and acquisition traits inside the lung field. A val set from the same sources cannot detect this.
+- This is the failure mode described by DeGrave, Janizek & Lee (*AI for radiographic COVID-19 detection selects shortcuts over signal*, Nature Machine Intelligence 3, 610–619, 2021). Their models also learned source-specific features and lost accuracy on external data.
+- A **mixed-source design**, where each source contributes both classes (goal 10b, Kaggle + Shenzhen), is required before any claim about TB signal. Its val and test splits should also be stratified by source.
+
+#### Sharing (NLM data-use terms, as in goal 9)
+- **Same rules as goal 9.**
+- **Committed:**
+  - the aggregate metrics;
+  - the image-free `h6_lung_energy.png`;
+  - the `predictions_public/` files (site, file, label, prob);
+  - the Grad-CAM attention CSVs (no age, sex or findings).
+- **Kept local** (gitignored under `artifacts/v10_arm*/external/`): full per-image predictions (with sex and age), Grad-CAM galleries and the mask-alignment figure, which show NLM images.
+
+### Goal 8: not started. Goal 10b (mixed-source training): optional, needs its own pre-registration
