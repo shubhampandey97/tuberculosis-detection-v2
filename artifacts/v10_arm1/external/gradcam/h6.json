@@ -1,0 +1,28 @@
+{
+  "uniform_border_share": 0.42402742346938777,
+  "H6": {
+    "resnet": {
+      "n": 138,
+      "empty_tb_maps": 0,
+      "median_lung_energy": 0.23948553204536438,
+      "median_lung_area": 0.25715481505102045,
+      "median_diff": -0.010218883959614497,
+      "wilcoxon_p": 0.24979555147223453,
+      "supported": true
+    },
+    "efficientnet": {
+      "n": 130,
+      "empty_tb_maps": 8,
+      "median_lung_energy": 0.24524392932653427,
+      "median_lung_area": 0.25715481505102045,
+      "median_diff": 0.00489796181114352,
+      "wilcoxon_p": 0.8009480947343421,
+      "supported": false
+    },
+    "supported_overall": false,
+    "lung_area_inside_goal4_centre_box": {
+      "median": 0.9415296571366322,
+      "min": 0.7957354414875849
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "false_positive@0.5": {
+    "per_model": {
+      "resnet": 1,
+      "efficientnet": 0
+    },
+    "union": 1,
+    "all_3": 0,
+    "exactly_2": 0,
+    "exactly_1": 1,
+    "all_3_files": [],
+    "all_3_nonsquare": 0
+  },
+  "false_negative@0.5": {
+    "per_model": {
+      "resnet": 62,
+      "efficientnet": 72
+    },
+    "union": 85,
+    "all_3": 0,
+    "exactly_2": 49,
+    "exactly_1": 36,
+    "all_3_files": [],
+    "all_3_nonsquare": 0
+  },
+  "false_positive@tuned": {
+    "per_model": {
+      "resnet": 1,
+      "efficientnet": 3
+    },
+    "union": 3,
+    "all_3": 0,
+    "exactly_2": 1,
+    "exactly_1": 2,
+    "all_3_files": [],
+    "all_3_nonsquare": 0
+  },
+  "false_negative@tuned": {
+    "per_model": {
+      "resnet": 28,
+      "efficientnet": 22
+    },
+    "union": 35,
+    "all_3": 0,
+    "exactly_2": 15,
+    "exactly_1": 20,
+    "all_3_files": [],
+    "all_3_nonsquare": 0
+  }
+}

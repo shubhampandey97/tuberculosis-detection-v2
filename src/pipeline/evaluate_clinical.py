@@ -222,10 +222,30 @@ def md_table(header, rows):
 
 
 # ---------------------------------------------------------------- main
+def configure(config):
+    """Output and prediction folders from the config (defaults = the goal 4 paths, unchanged).
+    For models with the goal 10 internal crop, add the S2 mask: the centre of the *cropped* field."""
+    global OUT_DIR, PRED_DIR
+    OUT_DIR = config["artifacts"].get("clinical_dir", "artifacts/clinical")
+    PRED_DIR = config["artifacts"].get("predictions_dir", "artifacts/predictions")
+    frac = config.get("model_options", {}).get("crop_fraction")
+    if frac:
+        from src.components.model_builder import crop_pixels
+        size = config["training"]["img_size"][0]
+        c = crop_pixels(size, frac)                       # 27 px removed by the model's crop
+        inner = crop_pixels(size - 2 * c, 0.12)           # goal 4's 12% border, applied to the cropped field
+        MASKS["centre_in_crop"] = ("centre", (c + inner) / size)   # input pixels 47-176 hidden at 224
+        MASK_LABELS["centre_in_crop"] = "centre of the cropped field masked (S2 primary)"
+        MASK_LABELS["centre170"] = "centre 170x170 masked (goal 4 version; hides the whole cropped field)"
+
+
+PRED_DIR = "artifacts/predictions"
+
+
 def load_predictions(models, split):
     base = None
     for m in models:
-        d = pd.read_csv(f"artifacts/predictions/{m}_{split}.csv")
+        d = pd.read_csv(os.path.join(PRED_DIR, f"{m}_{split}.csv"))
         if base is None:
             base = d[["path", "label", "width", "height"]].copy()
         assert (d["path"].values == base["path"].values).all(), f"{m}_{split}: row order differs"
@@ -241,6 +261,7 @@ def main():
     args = parser.parse_args()
 
     config = load_config()
+    configure(config)
     models = config["models"]
     os.makedirs(OUT_DIR, exist_ok=True)
     val, test = load_predictions(models, "val"), load_predictions(models, "test")
@@ -372,8 +393,8 @@ def main():
     with open(os.path.join(OUT_DIR, "shared_errors.json"), "w") as f:
         json.dump(shared, f, indent=2)
     md.append("### Shared errors (TEST)\n" + md_table(
-        ["error @ threshold", "VGG16", "ResNet50", "EfficientNetB0", "union", "all 3", "exactly 2", "exactly 1",
-         "all-3 non-square"],
+        ["error @ threshold"] + [NAMES[m] for m in models] + ["union", "all 3", "exactly 2", "exactly 1",
+                                                              "all-3 non-square"],
         [[k] + [v["per_model"][m] for m in models] + [v["union"], v["all_3"], v["exactly_2"], v["exactly_1"],
                                                        v["all_3_nonsquare"]] for k, v in shared.items()]))
     for k, v in shared.items():

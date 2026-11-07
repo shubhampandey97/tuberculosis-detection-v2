@@ -1,0 +1,40 @@
+# Goal 10, Arm 1: shortcut removal, frozen backbone (pre-registered in docs/audit.md, goal 10).
+# Select with:  $env:TB_CONFIG = "src/config/config_v10_arm1.yaml"
+tag: v10_arm1
+data_path: data/Dataset of Tuberculosis Chest X-rays Images
+splits_path: data/splits.csv
+seed: 42
+
+models: [resnet, efficientnet]
+models_dir: models/tensorflow_v10_arm1
+
+model_options:
+  crop_fraction: 0.12        # central crop inside the model: remove 12% of each edge, resize back
+  standardize: true          # per-image z-score, rescaled to mean 128 / sd 50, clipped to 0-255
+
+training:
+  epochs: 20
+  patience: 4
+  batch_size: 32
+  img_size: [224, 224]
+  learning_rate: 1.0e-4
+  finetune: false
+
+augmentation:
+  rotation: 0.028
+  zoom: 0.1
+  shortcut:                  # label-independent: same probability for both classes
+    marker_p: 0.5            # synthetic markers / text, 1-3 items anywhere in the image
+    jpeg_p: 0.7
+    jpeg_quality: [50, 95]
+    brightness: 0.10         # +/- fraction of 255
+    contrast: [0.7, 1.3]
+    gamma: [0.7, 1.4]
+
+artifacts:
+  metrics_dir: artifacts/v10_arm1/metrics
+  plots_dir: artifacts/v10_arm1/plots
+  predictions_dir: artifacts/v10_arm1/predictions
+  history_dir: artifacts/v10_arm1/history
+  clinical_dir: artifacts/v10_arm1/clinical
+  external_dir: artifacts/v10_arm1/external

@@ -1,0 +1,81 @@
+{
+  "H1": {
+    "resnet/shenzhen": {
+      "external_auc": 0.4454334647969618,
+      "ci_high": 0.4871510279725387,
+      "internal_auc": 0.9936290124969369,
+      "supported": true
+    },
+    "resnet/montgomery": {
+      "external_auc": 0.6739224137931035,
+      "ci_high": 0.7674568965517241,
+      "internal_auc": 0.9936290124969369,
+      "supported": true
+    },
+    "efficientnet/shenzhen": {
+      "external_auc": 0.6531642565001461,
+      "ci_high": 0.6942927439380661,
+      "internal_auc": 0.9907235621521338,
+      "supported": true
+    },
+    "efficientnet/montgomery": {
+      "external_auc": 0.6428879310344828,
+      "ci_high": 0.7420312499999999,
+      "internal_auc": 0.9907235621521338,
+      "supported": true
+    }
+  },
+  "H4": {
+    "resnet/shenzhen": {
+      "diff": 0.003487437919953207,
+      "ci": [
+        -0.0058731832456909,
+        0.013494193689745885
+      ],
+      "supported": true
+    },
+    "resnet/montgomery": {
+      "diff": -0.0028017241379311164,
+      "ci": [
+        -0.026514008620689686,
+        0.020689655172413834
+      ],
+      "supported": false
+    },
+    "efficientnet/shenzhen": {
+      "diff": -0.0021088957055215296,
+      "ci": [
+        -0.012169743280747927,
+        0.008098935509786548
+      ],
+      "supported": false
+    },
+    "efficientnet/montgomery": {
+      "diff": 0.000646551724137745,
+      "ci": [
+        -0.013793103448275784,
+        0.014870689655172353
+      ],
+      "supported": true
+    }
+  },
+  "H2": {
+    "montgomery_resnet_specificity": 0.0125,
+    "supported": true
+  },
+  "H3": {
+    "testable": false,
+    "note": "no confirmed overlaps (whole-image and crop search)"
+  },
+  "H5": {
+    "resnet_specificity": {
+      "shenzhen": 0.5920245398773006,
+      "montgomery": 0.0125
+    },
+    "resnet_auc": {
+      "shenzhen": 0.4454334647969618,
+      "montgomery": 0.6739224137931035
+    },
+    "supported": false
+  }
+}

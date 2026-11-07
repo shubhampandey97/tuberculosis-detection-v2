@@ -1,0 +1,7 @@
+features,model,roc_auc_mean,roc_auc_std
+width + height + aspect,logistic regression,0.5250729971782604,0.0040254004162509505
+width + height + aspect,decision tree (depth 3),0.5250729971782604,0.0040254004162509505
+intensity (processed input),logistic regression,0.8773322722444508,0.00454307318177501
+intensity (processed input),decision tree (depth 3),0.8347621399037578,0.014766029968503288
+all features (S4a),logistic regression,0.8836065869030343,0.004310372220546477
+all features (S4a),decision tree (depth 3),0.8347621399037578,0.014766029968503288

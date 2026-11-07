@@ -1,0 +1,30 @@
+{
+  "rule": "highest threshold with VAL sensitivity >= 0.95",
+  "decision": "prob >= threshold -> TB",
+  "models": {
+    "resnet": {
+      "threshold": 0.9999972,
+      "k_required": 353,
+      "val_sensitivity": 0.9514824797843666,
+      "val_specificity": 1.0,
+      "val_counts": {
+        "tp": 353,
+        "fp": 0,
+        "tn": 76,
+        "fn": 18
+      }
+    },
+    "efficientnet": {
+      "threshold": 0.22674732,
+      "k_required": 353,
+      "val_sensitivity": 0.9514824797843666,
+      "val_specificity": 1.0,
+      "val_counts": {
+        "tp": 353,
+        "fp": 0,
+        "tn": 76,
+        "fn": 18
+      }
+    }
+  }
+}

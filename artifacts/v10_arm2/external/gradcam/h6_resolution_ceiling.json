@@ -1,0 +1,21 @@
+{
+  "method": "mask averaged onto the Grad-CAM grid (of the cropped field, if the model crops), upsampled like the heatmaps, lung-energy share computed as for the heatmaps",
+  "crop_fraction": 0.12,
+  "median_lung_area": 0.25715481505102045,
+  "models": {
+    "resnet": {
+      "grid": 7,
+      "median_ceiling": 0.7875861525535583,
+      "observed_median": 0.36808763444423676
+    },
+    "efficientnet": {
+      "grid": 7,
+      "median_ceiling": 0.7875861525535583,
+      "observed_median": 0.26961150765419006
+    }
+  },
+  "resnet_conv5_7x7": {
+    "median_ceiling": 0.7875861525535583,
+    "observed_median": 0.36808763444423676
+  }
+}

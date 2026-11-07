@@ -1,0 +1,54 @@
+{
+  "n_images": 2982,
+  "n_normal": 509,
+  "n_tb": 2473,
+  "layer_identity_max_diff": {
+    "arm1/resnet": 0.0,
+    "arm1/efficientnet": 0.0,
+    "arm2/resnet": 0.0,
+    "arm2/efficientnet": 0.0
+  },
+  "thumbnail_mean_median": 127.99662780761719,
+  "thumbnail_sd_median": 49.84629440307617,
+  "results": [
+    {
+      "features": "width + height + aspect",
+      "model": "logistic regression",
+      "roc_auc_mean": 0.5250729971782604,
+      "roc_auc_std": 0.0040254004162509505
+    },
+    {
+      "features": "width + height + aspect",
+      "model": "decision tree (depth 3)",
+      "roc_auc_mean": 0.5250729971782604,
+      "roc_auc_std": 0.0040254004162509505
+    },
+    {
+      "features": "intensity (processed input)",
+      "model": "logistic regression",
+      "roc_auc_mean": 0.8773322722444508,
+      "roc_auc_std": 0.00454307318177501
+    },
+    {
+      "features": "intensity (processed input)",
+      "model": "decision tree (depth 3)",
+      "roc_auc_mean": 0.8347621399037578,
+      "roc_auc_std": 0.014766029968503288
+    },
+    {
+      "features": "all features (S4a)",
+      "model": "logistic regression",
+      "roc_auc_mean": 0.8836065869030343,
+      "roc_auc_std": 0.004310372220546477
+    },
+    {
+      "features": "all features (S4a)",
+      "model": "decision tree (depth 3)",
+      "roc_auc_mean": 0.8347621399037578,
+      "roc_auc_std": 0.014766029968503288
+    }
+  ],
+  "all_feature_auc_max": 0.8836065869030343,
+  "rule": "all-feature AUC <= 0.75 (higher of LR and tree, as the raw audit headline 0.918 was the tree)",
+  "supported": false
+}
