@@ -454,4 +454,31 @@ Only the split seed is set ([data_loader.py:12,21](../src/components/data_loader
   - **Hypothesis:** the models partly learned the image source (consistent with §5.3 item 7 and the goal 4 masking result).
 - **Proposed next step (not done):** retrain on border-masked or lung-cropped images, then repeat the masking test; external validation; radiologist review of the misses.
 
-### Goals 6–8: not started
+### Goal 6 — APP + REQUIREMENTS + README: done (2026-11-07)
+- **App** ([app/streamlit_app.py](../app/streamlit_app.py)). Fixes the §5.2 app rows and the §5.4 app paths.
+  - Loads the primary **ResNet50 `.keras`** model and the **val-tuned threshold 0.6142** from `artifacts/clinical/thresholds.json`, so the threshold can't drift from the evaluated value.
+  - Shows a **"Research demo, not for clinical use"** banner that mentions the source bias and links to the failure analysis.
+  - Shows a "TB suspected" or "No TB flag" result and an **"Uncalibrated model score"**. The "Confidence" metric and progress bar are gone.
+  - Grad-CAM is the predicted-class map from the new `gradcam.py`. No cv2.
+  - Upload handling: `.convert("RGB")` (grayscale, RGBA and palette PNGs work); unreadable files show an error instead of crashing.
+- **Shared inference** ([src/components/inference.py](../src/components/inference.py)): paths resolve from the repo root, and it's reusable for the FastAPI endpoint in goal 8.
+- **Bug found and fixed: preprocessing parity.**
+  - Decoding JPEGs with PIL moved test scores by up to **0.024** (mean 0.0019) compared with training, which decodes with TensorFlow (a different IDCT).
+  - The model input now comes from the uploaded bytes through `data_loader.decode_and_resize()`, the same function training uses. PIL is only used to validate and display the image.
+  - After the fix: app vs saved test predictions, max diff **1.6e-7** (32 images). The training data path is unchanged (2.2e-8 on 64 images).
+  - `AppTest` render checks passed with no exceptions: no upload, two TB images, one Normal image, and garbage bytes.
+- **requirements.txt:** direct dependencies only, pinned to the lock-file versions. All 12 pins match the lock, `pip check` is clean, and a dry-run install changes nothing.
+  - `opencv-python` (the cause of the Docker libGL problem in §5.6) and `tqdm` are removed, since nothing uses them any more.
+  - `requirements-lock.txt` stays as the exact Windows environment. It pins the Windows-only `tensorflow-intel`.
+- **PyTorch files** (§5.7): moved with `git mv` to [legacy/pytorch/](../legacy/pytorch/README.md), with a README listing their known bugs. Nothing references them.
+- **README** (§5.6, §5.8): rewritten.
+  - A one-line honest TL;DR and the test results for all 3 models (tuned threshold, 95% CIs, exact bounds).
+  - A before/after table of the preprocessing fix, with the legacy results marked invalid.
+  - "Key finding: dataset confounding" (metadata AUC 0.918, lungs-hidden AUC 0.971/0.974/0.912, Grad-CAM gallery, TB.1892), plus limitations.
+  - Reproduction steps with measured CPU times, the dataset link (Kaggle, with a pointer to its page for the source and licence), and a repo map.
+  - Fixes: the real clone URL, closed code blocks, no "Fully containerized" claim.
+- **failure_analysis.md §2:** added point 5. Attention on the bottom strip alone isn't evidence of a shortcut; hot spots exactly on handwriting are.
+- **.gitignore:** the merged `Thumbs.db`/`*.npz` line was repaired and the UTF-16 line removed. The `.npz` heatmaps were untracked and removed from history (amended into the goal 5 commit).
+- **Still open:** recalibrating the scores; the threshold margin decision from goal 4; Docker, API and model card (goal 8); tests and CI (goal 7).
+
+### Goals 7–8: not started

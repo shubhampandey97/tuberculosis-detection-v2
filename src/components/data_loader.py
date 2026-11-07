@@ -21,8 +21,13 @@ def read_split(config, split):
 
 
 def load_image(path, img_size):
-    """Decode a JPEG/PNG as 3-channel RGB and resize to img_size. Returns float32 in 0-255."""
-    img = tf.io.decode_image(tf.io.read_file(path), channels=3, expand_animations=False)
+    """Read a JPEG/PNG file, decode as 3-channel RGB and resize to img_size. Returns float32 in 0-255."""
+    return decode_and_resize(tf.io.read_file(path), img_size)
+
+
+def decode_and_resize(encoded, img_size):
+    """Encoded JPEG/PNG bytes -> RGB float32 in 0-255 at img_size (shared by training and the app)."""
+    img = tf.io.decode_image(encoded, channels=3, expand_animations=False)
     img = tf.image.resize(img, img_size)  # plain resize: non-square images are stretched
     return tf.cast(img, tf.float32)
 
