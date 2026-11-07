@@ -1,0 +1,293 @@
+{
+  "meta": {
+    "split": "test",
+    "n": 448,
+    "n_normal": 77,
+    "n_tb": 371,
+    "bootstrap": {
+      "n_resamples": 2000,
+      "seed": 42,
+      "type": "stratified by class",
+      "ci": "95% percentile"
+    },
+    "positive_class": "TB"
+  },
+  "models": {
+    "vgg": {
+      "roc_auc": {
+        "value": 0.9917037140756817,
+        "ci_low": 0.9823563902404873,
+        "ci_high": 0.9981805929919138,
+        "n_undefined": 0
+      },
+      "brier": {
+        "value": 0.07295754943029022,
+        "ci_low": 0.054057396851945494,
+        "ci_high": 0.09172376792941264,
+        "n_undefined": 0
+      },
+      "at_0.5": {
+        "sensitivity": {
+          "value": 0.889487870619946,
+          "ci_low": 0.8571428571428571,
+          "ci_high": 0.9191374663072777,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 0.987012987012987,
+          "ci_low": 0.961038961038961,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 0.9969788519637462,
+          "ci_low": 0.99079754601227,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.6495726495726496,
+          "ci_low": 0.5891132611397124,
+          "ci_high": 0.719626168224299,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.9401709401709402,
+          "ci_low": 0.9217334428715874,
+          "ci_high": 0.9578651685393258,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 330,
+          "fp": 1,
+          "tn": 76,
+          "fn": 41
+        },
+        "threshold": 0.5
+      },
+      "at_tuned": {
+        "sensitivity": {
+          "value": 0.9299191374663073,
+          "ci_low": 0.9029649595687331,
+          "ci_high": 0.954177897574124,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 0.987012987012987,
+          "ci_low": 0.961038961038961,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 0.9971098265895953,
+          "ci_low": 0.9912536443148688,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.7450980392156863,
+          "ci_low": 0.6756756756756757,
+          "ci_high": 0.8191489361702128,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.9623430962343096,
+          "ci_low": 0.9475177304964539,
+          "ci_high": 0.976551724137931,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 345,
+          "fp": 1,
+          "tn": 76,
+          "fn": 26
+        },
+        "threshold": 0.23571646
+      }
+    },
+    "resnet": {
+      "roc_auc": {
+        "value": 0.9983197395596318,
+        "ci_low": 0.9960443868799664,
+        "ci_high": 0.9998258480064411,
+        "n_undefined": 0
+      },
+      "brier": {
+        "value": 0.026692770386476047,
+        "ci_low": 0.018681789976565968,
+        "ci_high": 0.03537115208883228,
+        "n_undefined": 0
+      },
+      "at_0.5": {
+        "sensitivity": {
+          "value": 0.954177897574124,
+          "ci_low": 0.9326145552560647,
+          "ci_high": 0.9757412398921833,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 0.987012987012987,
+          "ci_low": 0.961038961038961,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 0.9971830985915493,
+          "ci_low": 0.9915014164305949,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.8172043010752689,
+          "ci_low": 0.7499393203883495,
+          "ci_high": 0.8889558232931722,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.9752066115702479,
+          "ci_low": 0.9636664988895975,
+          "ci_high": 0.9863387978142076,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 354,
+          "fp": 1,
+          "tn": 76,
+          "fn": 17
+        },
+        "threshold": 0.5
+      },
+      "at_tuned": {
+        "sensitivity": {
+          "value": 0.9353099730458221,
+          "ci_low": 0.9083557951482479,
+          "ci_high": 0.9595687331536388,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.7623762376237624,
+          "ci_low": 0.6936936936936937,
+          "ci_high": 0.8369565217391305,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.9665738161559888,
+          "ci_low": 0.9519774011299436,
+          "ci_high": 0.9793672627235214,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 347,
+          "fp": 0,
+          "tn": 77,
+          "fn": 24
+        },
+        "threshold": 0.614188
+      }
+    },
+    "efficientnet": {
+      "roc_auc": {
+        "value": 0.9964294465642174,
+        "ci_low": 0.9918078552175588,
+        "ci_high": 0.999335772044667,
+        "n_undefined": 0
+      },
+      "brier": {
+        "value": 0.07194186803755978,
+        "ci_low": 0.058811756163311545,
+        "ci_high": 0.0865145406223492,
+        "n_undefined": 0
+      },
+      "at_0.5": {
+        "sensitivity": {
+          "value": 0.894878706199461,
+          "ci_low": 0.862533692722372,
+          "ci_high": 0.9245283018867925,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 0.987012987012987,
+          "ci_low": 0.961038961038961,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 0.996996996996997,
+          "ci_low": 0.9908814589665653,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.6608695652173913,
+          "ci_low": 0.5968992248062015,
+          "ci_high": 0.7333333333333333,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.9431818181818182,
+          "ci_low": 0.9246376811594202,
+          "ci_high": 0.9607843137254902,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 332,
+          "fp": 1,
+          "tn": 76,
+          "fn": 39
+        },
+        "threshold": 0.5
+      },
+      "at_tuned": {
+        "sensitivity": {
+          "value": 0.9460916442048517,
+          "ci_low": 0.921832884097035,
+          "ci_high": 0.967654986522911,
+          "n_undefined": 0
+        },
+        "specificity": {
+          "value": 0.987012987012987,
+          "ci_low": 0.961038961038961,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "ppv": {
+          "value": 0.9971590909090909,
+          "ci_low": 0.9914040114613181,
+          "ci_high": 1.0,
+          "n_undefined": 0
+        },
+        "npv": {
+          "value": 0.7916666666666666,
+          "ci_low": 0.7238095238095238,
+          "ci_high": 0.8636363636363636,
+          "n_undefined": 0
+        },
+        "f1": {
+          "value": 0.970954356846473,
+          "ci_low": 0.957983193277311,
+          "ci_high": 0.9822161422708618,
+          "n_undefined": 0
+        },
+        "counts": {
+          "tp": 351,
+          "fp": 1,
+          "tn": 76,
+          "fn": 20
+        },
+        "threshold": 0.3257094
+      }
+    }
+  }
+}
